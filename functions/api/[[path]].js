@@ -136,6 +136,9 @@ async function handle(context) {
         return json({ success: true, message: 'ok', runtime: 'cloudflare-pages', version: Date.now() });
     }
 
+    // KV 绑定缺失时直接给出可操作的提示，避免 TypeError 与脏缓存造成"时好时坏"的假象
+    if (!env.NAV_KV) return fail('服务端未配置 KV 绑定 NAV_KV：请在项目「设置 → 绑定」添加后重新部署', 500);
+
     const store = new KVStore(env);
     await store.ensure();
     const session = await readSession(request, env.SESSION_SECRET).catch(() => null);

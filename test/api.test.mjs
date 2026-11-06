@@ -42,7 +42,7 @@ function context(method, path, opts = {}) {
     }
     const request = new Request(ORIGIN + path, init);
     return {
-        request, env, params: {},
+        request, env: opts.env || env, params: {},
         waitUntil: () => {},
         next: async () => new Response('static-ok', { status: 200 })
     };
@@ -290,6 +290,17 @@ await test('仓库内所有文件均不含硬编码凭据字面量', async () =>
     }
     walk(root);
     assert.deepEqual(bad, [], '发现硬编码凭据: ' + bad.join(', '));
+});
+
+await test('KV 未绑定时稳定返回明确提示，不出现 TypeError 或间歇性 200', async () => {
+    const noKv = { ...env, NAV_KV: undefined };
+    for (let i = 0; i < 3; i++) {
+        const res = await onRequest(context('GET', '/api/data', { env: noKv }));
+        const body = await res.clone().json();
+        assert.equal(res.status, 500, '第 ' + (i + 1) + ' 次请求应为 500');
+        assert.ok(String(body.message).includes('NAV_KV'), '错误信息应指出缺失的绑定名');
+        assert.ok(!String(body.message).includes('undefined'), '不应泄漏 TypeError 文案');
+    }
 });
 
 await test('KV 写入次数受控：无 Alarm、无逐 PV 写盘', async () => {
