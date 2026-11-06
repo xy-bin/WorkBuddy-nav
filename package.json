@@ -1,0 +1,17 @@
+{
+  "name": "navxybintop-pages",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Cloudflare Pages + KV 版导航站（前端零改动）",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "test": "node test/api.test.mjs",
+    "dev": "npm run build && wrangler pages dev ./public --kv NAV_KV --port 8789 --ip 127.0.0.1",
+    "deploy": "npm run build && wrangler pages deploy ./public",
+    "preflight": "npm run build && node test/api.test.mjs"
+  },
+  "devDependencies": {
+    "wrangler": "^4.158.0"
+  }
+}

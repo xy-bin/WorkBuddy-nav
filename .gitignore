@@ -1,0 +1,8 @@
+# public/ 是已提交的静态产物（含 vendor 化的 jQuery / Chart.js / FontAwesome），
+# 直接作为 Pages 的 Build output directory，无需在云端跑构建命令。
+# 改了前端源码后在本地执行 `npm run build` 重新生成并提交。
+/node_modules/
+/.wrangler/
+/dist/
+.dev.vars
+package-lock.json

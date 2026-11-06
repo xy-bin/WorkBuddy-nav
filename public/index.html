@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="site-title">我的聚合导航站 - 实用网站导航集合</title>
+    <!-- Meta标签优化 -->
+    <meta name="keywords" id="site-keywords" content="聚合导航,网站导航,实用工具,常用网站,网址导航,导航站">
+    <meta name="description" id="site-description" content="我的聚合导航站，为您提供精选常用网站导航，包括搜索引擎、社交媒体、开发工具、学习资源等各类实用网站集合。">
+    <meta name="author" content="xy-bin">
+    <meta name="copyright" content="© 2026 我的聚合导航站">
+    <meta name="robots" content="index, follow">
+    <meta name="googlebot" content="index, follow">
+    <meta name="generator" content="HTML5, Tailwind CSS, JavaScript">
+    <meta name="theme-color" content="#3B82F6">
+    <meta name="msapplication-TileColor" content="#3B82F6">
+    <!-- 开放图谱(Open Graph)标签 -->
+    <meta property="og:title" content="我的聚合导航站 - 实用网站导航集合">
+    <meta property="og:description" content="我的聚合导航站，为您提供精选常用网站导航，包括搜索引擎、社交媒体、开发工具、学习资源等各类实用网站集合。">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://nav.xybin.top/">
+    <meta property="og:image" content="https://nav.xybin.top/res/favicon.ico">
+    <meta property="og:site_name" content="我的聚合导航站">
+    <!-- Twitter Cards标签 -->
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="我的聚合导航站 - 实用网站导航集合">
+    <meta name="twitter:description" content="我的聚合导航站，为您提供精选常用网站导航，包括搜索引擎、社交媒体、开发工具、学习资源等各类实用网站集合。">
+    <meta name="twitter:image" content="https://nav.xybin.top/res/favicon.ico">
+    <meta name="twitter:creator" content="@xy-bin">
+    <!-- 规范URL标签 -->
+    <link rel="canonical" href="https://nav.xybin.top/">
+    <!-- 1. 引入Tailwind CSS CDN（样式布局核心） -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 2. 引入Font Awesome（图标库） -->
+    <link rel="stylesheet" href="vendor/font-awesome/css/font-awesome.min.css">
+    <!-- 3. 引入jQuery（简化JS操作，新手友好） -->
+    <script src="vendor/jquery/dist/jquery.min.js"></script>
+    <script src="js/security-utils.js"></script>
+    <!-- 4. 网站图标（可选） -->
+    <link rel="icon" id="site-favicon" href="res/favicon.ico" type="image/x-icon">
+    <link rel="apple-touch-icon" href="res/favicon.ico">
+    <link rel="mask-icon" href="res/favicon.ico" color="#3B82F6">
+    <!-- 5. Tailwind 自定义配置（可选） -->
+    <script src="js/tailwind-config.js"></script>
+    <!-- 结构化数据（JSON-LD） -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "我的聚合导航站",
+        "description": "我的聚合导航站，为您提供精选常用网站导航，包括搜索引擎、社交媒体、开发工具、学习资源等各类实用网站集合。",
+        "url": "https://nav.xybin.top/",
+        "potentialAction": {
+            "@type": "SearchAction",
+            "target": "https://nav.xybin.top/search?q={search_term_string}",
+            "query-input": "required name=search_term_string"
+        },
+        "publisher": {
+            "@type": "Organization",
+            "name": "xy-bin",
+            "logo": {
+                "@type": "ImageObject",
+                "url": "https://nav.xybin.top/res/favicon.ico",
+                "width": 32,
+                "height": 32
+            }
+        }
+    }
+    </script>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 dark:text-white min-h-screen">
+    <!-- 头部区域（时间、搜索框、公告） -->
+    <header class="bg-white dark:bg-gray-800 shadow-sm py-4 px-2 md:px-4">
+        <div class="container mx-auto max-w-7xl">
+            <!-- 顶部：时间 -->
+            <div class="flex flex-col md:flex-row justify-between items-center mb-4">
+                <!-- 时间显示容器 -->
+                <div id="current-time-container" class="text-gray-600 dark:text-gray-300 mb-2 md:mb-0 text-center md:text-left">
+                    <div id="holiday-countdown" class="text-sm opacity-80"></div>
+                    <div id="lunar-date" class="text-sm opacity-90"></div>
+                    <div id="current-time"></div>
+                </div>
+            </div>
+            <!-- 搜索框（站内链接搜索 + 网络搜索） -->
+            <div class="w-full max-w-xl mx-auto">
+                <div class="flex items-center">
+                    <div class="relative flex-1">
+                        <input 
+                            type="text" 
+                            id="search-input" 
+                            placeholder="搜索链接名称/描述..." 
+                            class="w-full pr-10 pl-4 py-2 border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-700 text-gray-800 dark:text-white rounded-l-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
+                        >
+                        <button id="clear-search-btn" class="absolute right-8 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-300 hover:text-gray-600 dark:hover:text-gray-100 transition-colors hidden">
+                            <i class="fa fa-times"></i>
+                        </button>
+                    </div>
+                    <select id="search-engine" class="px-3 py-2 border-y border-gray-300 dark:border-y dark:border-gray-700 bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary">
+                        <option value="baidu">百度搜索</option>
+                        <option value="google">谷歌搜索</option>
+                        <option value="bing">必应搜索</option>
+                        <option value="so">360搜索</option>
+                    </select>
+                    <button id="search-button" class="px-4 py-2 border border-gray-300 dark:border-gray-700 bg-primary text-white rounded-r-lg hover:bg-primary/90 transition-colors">
+                        <i class="fa fa-search"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- 移动端菜单按钮 -->
+    <div class="md:hidden container mx-auto max-w-7xl px-2 py-2">
+        <button id="mobile-menu-btn" class="flex items-center justify-between w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-white rounded-lg shadow-[inset_0_2px_4px_rgba(0,0,0,0.1),0_3px_6px_rgba(0,0,0,0.1),0_1px_2px_rgba(255,255,255,0.8)] dark:shadow-[inset_0_2px_4px_rgba(255,255,255,0.1),0_3px_6px_rgba(0,0,0,0.3),0_1px_2px_rgba(255,255,255,0.1)] hover:shadow-[inset_0_2px_4px_rgba(0,0,0,0.15),0_5px_10px_rgba(0,0,0,0.2),0_2px_4px_rgba(255,255,255,0.9)] dark:hover:shadow-[inset_0_2px_4px_rgba(255,255,255,0.15),0_5px_10px_rgba(0,0,0,0.4),0_2px_4px_rgba(255,255,255,0.15)] transition-all duration-300">
+            <span class="font-medium">分类导航</span>
+            <i class="fa fa-bars text-primary"></i>
+        </button>
+    </div>
+
+    <!-- 主体区域（左侧导航 + 分类链接） -->
+    <div class="container mx-auto max-w-full px-2 md:px-4">
+        <div class="flex flex-col lg:flex-row gap-6 pt-8">
+            <!-- 左侧分类导航栏（由JS动态渲染） -->
+            <aside class="lg:w-64 w-full transition-all duration-300 ease-in-out lg:sticky top-4 h-fit">
+                <div id="sidebar-nav" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 md:block"></div>
+            </aside>
+            <!-- 右侧分类链接容器 -->
+            <main class="flex-1">
+                <div id="category-container" class="grid grid-cols-1 gap-6"></div>
+            </main>
+        </div>
+    </div>
+
+    <!-- 底部区域（版权信息） -->
+    <footer class="bg-white dark:bg-gray-800 shadow-sm py-4 px-2 md:px-4 mt-auto">
+        <div class="container mx-auto max-w-7xl text-center text-gray-500 dark:text-gray-400 text-sm">
+            <p id="site-footer">Copyright © 2024 我的聚合导航站 | Theme By Tailwind CSS</p>
+            <p id="site-icp" class="mt-1" style="display: none;"></p>
+            <div id="site-footer-custom"></div>
+        </div>
+    </footer>
+
+    <!-- 固定功能按钮组 -->
+    <div class="fixed bottom-6 right-6 flex flex-col gap-3 z-50">
+        <!-- 提交书签按钮 -->
+        <button id="submit-bookmark-btn" class="p-3 bg-green-500 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 focus:outline-none">
+            <i class="fa fa-plus"></i>
+        </button>
+        
+        <!-- 夜间/白天模式切换按钮 -->
+        <button id="theme-toggle-btn" class="p-3 bg-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 focus:outline-none">
+            <i class="fa fa-moon-o text-primary"></i>
+        </button>
+        
+        <!-- 一键返回顶部按钮 -->
+        <button id="back-to-top-btn" class="p-3 bg-primary text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 opacity-0 invisible focus:outline-none">
+            <i class="fa fa-arrow-up"></i>
+        </button>
+    </div>
+
+    <!-- 引入主题管理脚本 -->
+    <script src="js/theme/themeManager.js"></script>
+    
+    <!-- 提交书签模态框 -->
+    <div id="submit-bookmark-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-md w-full mx-4 p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold text-gray-800 dark:text-white">提交书签</h2>
+                <button id="close-submit-modal-btn" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
+                    <i class="fa fa-times"></i>
+                </button>
+            </div>
+            <form id="submit-bookmark-form">
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">书签名称</label>
+                    <input type="text" id="submit-bookmark-name" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-700 text-gray-800 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary" placeholder="请输入书签名称" required>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">书签URL</label>
+                    <input type="url" id="submit-bookmark-url" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-700 text-gray-800 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary" placeholder="https://example.com" required>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">书签描述</label>
+                    <input type="text" id="submit-bookmark-desc" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-700 text-gray-800 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary" placeholder="请输入书签描述（可选）">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">分类</label>
+                    <select id="submit-bookmark-category" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-700 text-gray-800 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary">
+                        <option value="">请选择分类</option>
+                    </select>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">提交者名称</label>
+                    <input type="text" id="submit-bookmark-submitter" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-700 text-gray-800 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary" placeholder="请输入您的姓名（可选）">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">联系方式</label>
+                    <input type="text" id="submit-bookmark-contact" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-700 text-gray-800 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary" placeholder="邮箱或手机号（可选）">
+                </div>
+                <div class="flex gap-3">
+                    <button type="button" id="cancel-submit-btn" class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-700 text-gray-800 dark:text-white rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                        取消
+                    </button>
+                    <button type="submit" id="confirm-submit-btn" class="flex-1 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors">
+                        提交审核
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- 公告悬浮框 -->
+    <div id="announcement-toast" class="fixed top-4 right-4 bg-white dark:bg-gray-800 shadow-lg rounded-lg p-4 max-w-xs w-full transform -translate-y-full opacity-0 transition-all duration-300 z-50">
+        <div class="flex justify-between items-start">
+            <div class="flex items-center">
+                <i class="fa fa-bell text-blue-500 mr-3 mt-1"></i>
+                <div>
+                    <h3 id="toast-title" class="font-semibold text-gray-800 dark:text-white mb-1 text-sm">公告</h3>
+                    <p id="toast-content" class="text-sm text-gray-600 dark:text-gray-300">本站为静态聚合导航，仅供个人使用</p>
+                </div>
+            </div>
+            <button id="close-toast" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
+                <i class="fa fa-times"></i>
+            </button>
+        </div>
+    </div>
+    <!-- 引入核心JS脚本（最后引入，确保DOM加载完成） -->
+    <script src="js/main.js"></script>
+    <!-- 引入提交书签脚本 -->
+    <script src="js/submit-bookmark.js"></script>
+    <!-- 主题预览功能 -->
+    <script src="js/theme-preview.js"></script>
+</body>
+</html>

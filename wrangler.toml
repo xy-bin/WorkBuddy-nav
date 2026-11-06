@@ -1,0 +1,16 @@
+# Cloudflare Pages 项目配置
+# GitHub 集成：Root directory = pages（若仓库根就是本目录则留空）
+#              Build command  = 留空（public/ 已提交，零构建）
+#              Build output directory = public
+#              Functions directory   = functions（默认）
+name = "navxybintop"
+compatibility_date = "2026-11-06"
+pages_build_output_dir = "./public"
+
+# 线上：Dashboard → Settings → Functions → KV namespace bindings
+#       绑定变量名必须为 NAV_KV（代码里 env.NAV_KV）
+# 本地：npm run dev 会用 --kv NAV_KV 映射到本地模拟命名空间，无需真实 id
+# 若改用 wrangler pages deploy 命令行部署，取消注释并填入真实 namespace id：
+# [[kv_namespaces]]
+# binding = "NAV_KV"
+# id = "REPLACE_WITH_KV_NAMESPACE_ID"

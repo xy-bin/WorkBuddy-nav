@@ -1,0 +1,301 @@
+// Pages + KV 回归测试：纯内存 mock，无需 Cloudflare 账号
+import assert from 'node:assert/strict';
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
+import { join } from 'node:path';
+import { onRequest } from '../functions/api/[[path]].js';
+import { onRequest as middleware } from '../functions/_middleware.js';
+import { onRequestGet as adminPage } from '../functions/admin.html.js';
+import { hashPassword } from '../lib/auth.js';
+import { STATE_KEY } from '../lib/store.js';
+
+const ORIGIN = 'https://nav.test';
+
+class MockKV {
+    constructor() { this.map = new Map(); this.writes = 0; }
+    async get(key, type) {
+        const v = this.map.get(key);
+        if (v === undefined) return null;
+        return type === 'json' ? JSON.parse(v) : String(v);
+    }
+    async put(key, value) { this.writes += 1; this.map.set(key, String(value)); }
+    raw(key) { const v = this.map.get(key); return v ? JSON.parse(v) : null; }
+}
+
+const kv = new MockKV();
+const env = {
+    NAV_KV: kv,
+    ADMIN_USERNAME: 'admin',
+    ADMIN_PASSWORD_HASH: await hashPassword('test-pass'),
+    SESSION_SECRET: 'test-session-secret-0123456789',
+    JSADD_TOKEN: 'test-jsadd-token'
+};
+
+function context(method, path, opts = {}) {
+    const headers = new Headers(opts.headers || {});
+    if (!headers.has('Origin')) headers.set('Origin', ORIGIN);
+    if (opts.cookie) headers.set('Cookie', opts.cookie);
+    if (opts.ip) headers.set('CF-Connecting-IP', opts.ip);
+    const init = { method, headers };
+    if (opts.body !== undefined) {
+        headers.set('Content-Type', 'application/json');
+        init.body = JSON.stringify(opts.body);
+    }
+    const request = new Request(ORIGIN + path, init);
+    return {
+        request, env, params: {},
+        waitUntil: () => {},
+        next: async () => new Response('static-ok', { status: 200 })
+    };
+}
+
+async function api(method, path, opts = {}) {
+    const res = await onRequest(context(method, path, opts));
+    let data = null;
+    try { data = await res.clone().json(); } catch (_) { /* 非 JSON 响应 */ }
+    return { res, data };
+}
+
+let passed = 0;
+let failed = 0;
+async function test(name, fn) {
+    try { await fn(); passed += 1; console.log('PASS  ' + name); }
+    catch (e) { failed += 1; console.log('FAIL  ' + name + ' -> ' + e.message); }
+}
+
+let cookie = '';
+
+await test('首次 /api/data 自动用种子初始化 KV，返回分组数据', async () => {
+    const { res, data } = await api('GET', '/api/data');
+    assert.equal(res.status, 200);
+    assert.ok(Array.isArray(data) && data.length >= 6);
+    assert.ok(Array.isArray(data[0].links));
+    assert.ok(kv.raw(STATE_KEY), 'KV 中应已写入 site:state');
+});
+
+await test('ETag 命中返回 304', async () => {
+    const first = await api('GET', '/api/data');
+    const etag = first.res.headers.get('ETag');
+    assert.ok(etag);
+    const second = await onRequest(context('GET', '/api/data', { headers: { 'If-None-Match': etag } }));
+    assert.equal(second.status, 304);
+});
+
+await test('公开快照不含私有字段与未激活公告', async () => {
+    const { data } = await api('GET', '/api/data');
+    assert.ok(!JSON.stringify(data).includes('submitter_contact'));
+    const ann = await api('GET', '/api/announcements');
+    assert.ok(Array.isArray(ann.data));
+    assert.ok(ann.data.every(a => Number(a.is_active) === 1), '匿名不得看到未激活公告');
+});
+
+await test('公开读带安全响应头', async () => {
+    const { res } = await api('GET', '/api/data');
+    assert.ok(res.headers.get('Content-Security-Policy'));
+    assert.equal(res.headers.get('X-Content-Type-Options'), 'nosniff');
+});
+
+await test('未知 API 路径 404，不穿透到状态层', async () => {
+    const { res } = await api('GET', '/api/not-exists');
+    assert.equal(res.status, 404);
+});
+
+await test('未登录访问管理端接口 401', async () => {
+    const { res } = await api('GET', '/api/dashboard');
+    assert.equal(res.status, 401);
+});
+
+await test('跨站写操作被 CSRF 拦截 403', async () => {
+    const { res } = await api('POST', '/api/categories', {
+        headers: { Origin: 'https://evil.test' },
+        body: { category_name: 'hack' }
+    });
+    assert.equal(res.status, 403);
+});
+
+await test('登录：错误口令 401，正确口令下发 HttpOnly 签名 Cookie', async () => {
+    const bad = await api('POST', '/api/login', { ip: 'ip-a', body: { username: 'admin', password: 'wrong' } });
+    assert.equal(bad.res.status, 401);
+    const good = await api('POST', '/api/login', { ip: 'ip-b', body: { username: 'admin', password: 'test-pass' } });
+    assert.equal(good.res.status, 200);
+    const setCookie = good.res.headers.get('Set-Cookie');
+    assert.ok(setCookie && setCookie.includes('HttpOnly'));
+    cookie = setCookie.split(';')[0];
+});
+
+await test('check-login 识别有效 Cookie', async () => {
+    const { data } = await api('GET', '/api/check-login', { cookie });
+    assert.equal(data.loggedIn, true);
+});
+
+await test('管理端读完整公告（含未激活）', async () => {
+    const { res, data } = await api('GET', '/api/announcements', { cookie });
+    assert.equal(res.status, 200);
+    assert.ok(Array.isArray(data.data || data));
+});
+
+await test('管理端 CRUD：新增分类后立即可读（写后一致）', async () => {
+    const add = await api('POST', '/api/categories', { cookie, body: { category_name: '测试分类', category_icon: 'fa fa-star', sort: 99 } });
+    assert.equal(add.res.status, 200);
+    assert.equal(add.data.success, true);
+    const list = await api('GET', '/api/categories', { cookie });
+    assert.ok(JSON.stringify(list.data).includes('测试分类'));
+});
+
+await test('匿名投稿：XSS payload 原样入库但不执行', async () => {
+    const payload = '<img src=x onerror=alert(1)>';
+    const { res } = await api('POST', '/api/pending-bookmarks', {
+        ip: 'ip-submit-1',
+        body: { link_name: payload, link_url: 'https://xss.test/', submitter_name: 'tester', submitter_contact: 'private-phone' }
+    });
+    assert.equal(res.status, 200);
+    const state = kv.raw(STATE_KEY);
+    assert.ok(state.pending_bookmarks.some(p => p.link_name === payload));
+    const pub = await api('GET', '/api/data');
+    assert.ok(!JSON.stringify(pub.data).includes('private-phone'));
+});
+
+await test('SQL 注入串作为 URL 不破坏数据', async () => {
+    const { res } = await api('POST', '/api/pending-bookmarks', {
+        ip: 'ip-submit-2',
+        body: { link_name: 'inject', link_url: "https://e.test/'; DROP TABLE links;--", submitter_name: 'tester' }
+    });
+    assert.equal(res.status, 200);
+    const after = await api('GET', '/api/data');
+    assert.equal(after.res.status, 200);
+    assert.ok(Array.isArray(after.data) && after.data.length >= 6);
+});
+
+await test('投稿限流：同一 IP 第 6 次 429', async () => {
+    let last = 0;
+    for (let i = 0; i < 6; i++) {
+        const r = await api('POST', '/api/pending-bookmarks', {
+            ip: 'ip-flood',
+            body: { link_name: 'n' + i, link_url: 'https://flood.test/' + i, submitter_name: 't' }
+        });
+        last = r.res.status;
+    }
+    assert.equal(last, 429);
+});
+
+await test('管理员审核通过后，链接出现在公开 /api/data', async () => {
+    const pending = await api('GET', '/api/pending-bookmarks', { cookie });
+    const items = pending.data.data || pending.data;
+    assert.ok(Array.isArray(items) && items.length > 0);
+    const target = items.find(x => x.link_url === 'https://xss.test/');
+    assert.ok(target);
+    const approve = await api('PUT', '/api/pending-bookmarks/' + target.id + '/approve', { cookie });
+    assert.equal(approve.res.status, 200);
+    const pub = await api('GET', '/api/data');
+    assert.ok(JSON.stringify(pub.data).includes('https://xss.test/'));
+});
+
+await test('website-settings 只接受公开键白名单', async () => {
+    const { res } = await api('POST', '/api/website-settings', {
+        cookie, body: { site_title: '我的导航', admin_secret: 'should-not-store' }
+    });
+    assert.equal(res.status, 200);
+    const state = kv.raw(STATE_KEY);
+    assert.equal(state.settings.site_title, '我的导航');
+    assert.ok(!('admin_secret' in state.settings));
+});
+
+await test('管理页 /admin.html 未登录 302，已登录放行', async () => {
+    const anon = await adminPage(context('GET', '/admin.html'));
+    assert.equal(anon.status, 302);
+    assert.equal(anon.headers.get('Location'), '/login.html');
+    const auth = await adminPage(context('GET', '/admin.html', { cookie }));
+    assert.equal(auth.status, 200);
+});
+
+await test('登录限流：第 11 次 429', async () => {
+    let last = 0;
+    for (let i = 0; i < 11; i++) {
+        const r = await api('POST', '/api/login', { ip: 'ip-login-flood', body: { username: 'admin', password: 'x' } });
+        last = r.res.status;
+    }
+    assert.equal(last, 429);
+});
+
+await test('中间件：/admin 别名未登录一律 302，登录后放行', async () => {
+    for (const p of ['/admin', '/admin/', '/admin.html']) {
+        const anon = await middleware(context('GET', p));
+        assert.equal(anon.status, 302, p + ' 未登录应跳登录页');
+        const auth = await middleware(context('GET', p, { cookie }));
+        assert.equal(auth.status, 200, p + ' 已登录应放行');
+    }
+});
+
+await test('中间件：敏感路径与编码绕过 404，合法静态放行', async () => {
+    for (const p of ['/server.js', '/data/navxybintop.db', '/lib/auth.js', '/seed.js', '/%64ata/navxybintop.db', '/functions/api/x.js']) {
+        const r = await middleware(context('GET', p));
+        assert.equal(r.status, 404, p + ' 应被默认拒绝');
+    }
+    assert.equal((await middleware(context('GET', '/js/main.js'))).status, 200);
+    assert.equal((await middleware(context('GET', '/vendor/jquery/dist/jquery.min.js'))).status, 200);
+    assert.equal((await middleware(context('GET', '/vendor/font-awesome/fonts/fontawesome-webfont.woff2'))).status, 200);
+    assert.equal((await middleware(context('GET', '/node_modules/jquery/dist/jquery.min.js'))).status, 404);
+    assert.equal((await middleware(context('GET', '/'))).status, 200);
+    assert.equal((await middleware(context('GET', '/api/data'))).status, 200);
+});
+
+await test('Pages 产物不含 node_modules 目录且 HTML 引用 vendor/', async () => {
+    const root = new URL('../public/', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1');
+    assert.ok(!existsSync(join(root, 'node_modules')), 'node_modules 会被 Pages 忽略，产物不得包含');
+    assert.ok(existsSync(join(root, 'vendor/jquery/dist/jquery.min.js')), 'vendor 目录必须存在');
+    for (const name of ['index.html', 'admin.html', 'login.html']) {
+        const html = readFileSync(join(root, name), 'utf8');
+        assert.ok(!html.includes('node_modules/'), name + ' 仍引用了会被忽略的路径');
+    }
+});
+
+await test('jsadd token 仅在已登录管理页动态注入', async () => {
+    const html = '<html><head><title>admin</title></head><body>ok</body></html>';
+    const mk = (p, withCookie) => {
+        const c = context('GET', p, withCookie ? { cookie } : {});
+        c.next = async () => new Response(html, { status: 200, headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+        return c;
+    };
+    const anonBody = await (await middleware(mk('/admin', false))).text();
+    assert.ok(!anonBody.includes('__JSADD_TOKEN__'), '未登录绝不能注入 token');
+
+    const auth = await middleware(mk('/admin', true));
+    const body = await auth.text();
+    assert.ok(body.includes('window.__JSADD_TOKEN__='), '已登录管理页应注入 token');
+    assert.ok(body.includes(env.JSADD_TOKEN), '注入值应来自环境变量');
+    assert.ok(body.indexOf('__JSADD_TOKEN__') < body.indexOf('</head>'), '注入脚本须在 head 内、业务脚本之前');
+    assert.equal(auth.headers.get('Cache-Control'), 'no-store');
+
+    const publicPage = context('GET', '/index.html');
+    publicPage.next = async () => new Response(html, { status: 200, headers: { 'Content-Type': 'text/html' } });
+    assert.ok(!(await (await middleware(publicPage)).text()).includes('__JSADD_TOKEN__'), '公开页不应注入');
+});
+
+await test('仓库内所有文件均不含硬编码凭据字面量', async () => {
+    const root = new URL('../', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1');
+    const bad = [];
+    const patterns = [
+        /const\s+token\s*=\s*['"][A-Za-z0-9_\-]{16,}['"]/,
+        /jsAddToken\s*=\s*['"][A-Za-z0-9_\-]{16,}['"]/,
+        /SESSION_SECRET\s*=\s*['"][A-Za-z0-9_\-]{24,}['"]/
+    ];
+    function walk(dir) {
+        for (const name of readdirSync(dir)) {
+            if (['node_modules', '.git', '.wrangler', 'dist'].includes(name)) continue;
+            const p = join(dir, name);
+            if (statSync(p).isDirectory()) { walk(p); continue; }
+            if (/\.(woff2?|ttf|eot|otf|png|jpe?g|gif|ico)$/i.test(p)) continue;
+            const s = readFileSync(p, 'utf8');
+            if (patterns.some(re => re.test(s))) bad.push(p.replace(root, ''));
+        }
+    }
+    walk(root);
+    assert.deepEqual(bad, [], '发现硬编码凭据: ' + bad.join(', '));
+});
+
+await test('KV 写入次数受控：无 Alarm、无逐 PV 写盘', async () => {
+    assert.ok(kv.writes > 0);
+    assert.ok(kv.writes < 40, '单次会话内 KV 写入不应失控，实际 ' + kv.writes);
+});
+
+console.log('\n通过 ' + passed + ' 项，失败 ' + failed + ' 项；KV 写入 ' + kv.writes + ' 次');
+if (failed) process.exit(1);
