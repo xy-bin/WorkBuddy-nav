@@ -103,6 +103,11 @@ $(document).ready(function() {
             toast.css('top', (Math.ceil(hero.getBoundingClientRect().height) + 14) + 'px');
         }
         toast.removeClass('-translate-y-full opacity-0').addClass('translate-y-0 opacity-100');
+        // 渐变首屏下浮层会压住第一行书签卡片，展示数秒后自动收起；铃铛可随时再次打开
+        window.clearTimeout(window.__navToastTimer);
+        window.__navToastTimer = window.setTimeout(function () {
+            hideAnnouncementToast();
+        }, 5000);
         // 不再记录显示次数，每次页面加载都显示
     }
     
