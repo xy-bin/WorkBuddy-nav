@@ -292,6 +292,26 @@ await test('仓库内所有文件均不含硬编码凭据字面量', async () =>
     assert.deepEqual(bad, [], '发现硬编码凭据: ' + bad.join(', '));
 });
 
+await test('按分类筛选与单条书签均返回 bookmark_* 字段（后台表格不会空白）', async () => {
+    const all = await api('GET', '/api/bookmarks', { cookie });
+    assert.equal(all.res.status, 200);
+    assert.ok(all.data.data.length > 0);
+    const first = all.data.data[0];
+    const one = await api('GET', '/api/bookmarks/' + first.bookmark_id, { cookie });
+    const byCat = await api('GET', '/api/categories/' + first.category_id + '/links', { cookie });
+    assert.equal(one.res.status, 200);
+    assert.equal(byCat.res.status, 200);
+    assert.ok(byCat.data.data.length > 0, '分类筛选应返回书签');
+    for (const [label, list] of [['单条', [one.data.data]], ['分类筛选', byCat.data.data]]) {
+        for (const b of list) {
+            assert.ok(b.bookmark_id !== undefined && b.bookmark_id !== '', label + ': 缺 bookmark_id');
+            assert.ok(b.bookmark_name, label + ': 缺 bookmark_name');
+            assert.ok(/^https?:\/\//.test(b.bookmark_url || ''), label + ': 缺 bookmark_url');
+            assert.equal(b.link_id, undefined, label + ': 不应残留 link_* 字段');
+        }
+    }
+});
+
 await test('KV 未绑定时稳定返回明确提示，不出现 TypeError 或间歇性 200', async () => {
     const noKv = { ...env, NAV_KV: undefined };
     for (let i = 0; i < 3; i++) {

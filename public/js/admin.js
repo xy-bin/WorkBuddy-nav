@@ -376,7 +376,7 @@ function loadBookmarks(categoryId = null) {
         success: function(response) {
             let bookmarks = [];
             if (response.success) {
-                bookmarks = response.data;
+                bookmarks = response.data || [];
             } else if (response.length > 0) {
                 // 处理旧格式的响应
                 bookmarks = response.map(link => ({
@@ -389,7 +389,20 @@ function loadBookmarks(categoryId = null) {
                     sort: link.sort
                 }));
             }
-            
+
+            // 统一字段别名：管理端表格读 bookmark_*，部分接口/备份数据返回 link_*。
+            // 不做这层归一化时，字段缺失会让 ID、名称、URL 三列静默显示为空。
+            bookmarks = (Array.isArray(bookmarks) ? bookmarks : []).map(b => ({
+                bookmark_id: b.bookmark_id != null ? b.bookmark_id : (b.link_id != null ? b.link_id : ''),
+                bookmark_name: b.bookmark_name != null ? b.bookmark_name : (b.link_name || ''),
+                bookmark_url: b.bookmark_url != null ? b.bookmark_url : (b.link_url || ''),
+                bookmark_icon: b.bookmark_icon != null ? b.bookmark_icon : (b.link_icon || 'fa fa-link'),
+                bookmark_description: b.bookmark_description != null ? b.bookmark_description : (b.link_desc || ''),
+                category_id: b.category_id != null ? b.category_id : 0,
+                category_name: b.category_name || '',
+                sort: b.sort != null ? b.sort : 0
+            }));
+
             $("#link-list").empty();
             bookmarks.forEach(bookmark => {
                 const row = "<tr data-id=\"" + esc(bookmark.bookmark_id) + "\" class=\"hover:bg-gray-50 transition-colors duration-150\"><td class=\"py-3 px-4 text-center bg-gray-50 hover:bg-gray-100\"><i class=\"drag-handle fa fa-bars cursor-move text-gray-400 hover:text-gray-600 transition-colors duration-150\"></i></td><td class=\"py-3 px-4 text-gray-500 font-mono text-sm\" width=\"80\">" + esc(bookmark.bookmark_id) + "</td><td class=\"py-3 px-4 font-medium\" width=\"200\"><i class=\"" + esc(bookmark.bookmark_icon) + " text-xl text-gray-700 mr-2\"></i>" + esc(bookmark.bookmark_name) + "</td><td class=\"py-3 px-4 truncate flex-1\"><a href=\"" + safeHref(bookmark.bookmark_url) + "\" target=\"_blank\" title=\"" + safeHref(bookmark.bookmark_url) + "\" class=\"text-blue-600 hover:text-blue-800 transition-colors duration-150\">" + esc(truncateUrl(bookmark.bookmark_url, 30)) + "</a></td><td class=\"py-3 px-4 text-right\"><button type=\"button\" class=\"edit-link-btn bg-primary text-white px-3 py-1 rounded-lg mr-2 hover:bg-primary/90 transition-colors duration-150\" data-id=\"" + esc(bookmark.bookmark_id) + "\">编辑</button><button type=\"button\" class=\"delete-link-btn bg-red-500 text-white px-3 py-1 rounded-lg hover:bg-red-600 transition-colors duration-150\" data-id=\"" + esc(bookmark.bookmark_id) + "\">删除</button></td></tr>";

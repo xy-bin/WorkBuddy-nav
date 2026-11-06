@@ -107,6 +107,12 @@ body.page-admin #admin-sidebar ul > li > a i {
 }
 
 /* ---------------- 内容面板 ---------------- */
+/* flex 子项默认 min-width:auto，宽表格会把整行撑出视口，
+   导致用户横向滚动后左侧菜单被裁掉。收缩到 0 让表格自己在
+   .overflow-x-auto 容器内滚动，同时保证侧栏不被压缩。 */
+body.page-admin main.container > div > aside { flex-shrink: 0; }
+body.page-admin section.flex-1 { min-width: 0; max-width: 100%; }
+
 body.page-admin section.flex-1 > div[id][class*="rounded-xl"] {
     background: var(--nv-card) !important;
     border: 1px solid var(--nv-line);
