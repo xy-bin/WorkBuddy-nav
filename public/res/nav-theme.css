@@ -631,7 +631,6 @@ body.page-home .hero {
     --hero-c: #d5dce7;
     --hero-glow-a: rgba(255, 255, 255, .24);
     --hero-glow-b: rgba(255, 255, 255, .16);
-    --hero-watermark: rgba(255, 255, 255, .19);
 }
 body.dark.page-home .hero {
     --hero-ink: #eef2fb;
@@ -644,7 +643,6 @@ body.dark.page-home .hero {
     --hero-c: #2b3550;
     --hero-glow-a: rgba(120, 150, 220, .16);
     --hero-glow-b: rgba(90, 120, 190, .12);
-    --hero-watermark: rgba(255, 255, 255, .07);
 }
 
 body.page-home > header.hero {
@@ -675,29 +673,10 @@ body.page-home .hero-bg {
         linear-gradient(118deg, var(--hero-a) 0%, var(--hero-b) 54%, var(--hero-c) 100%);
     transition: filter .5s ease;
 }
-/* 参考样式里那行巨型浅色英文：改为完整、克制、不干扰阅读的水印 */
-body.page-home .hero-bg::before {
-    content: "BOOKMARK";
-    position: absolute;
-    top: 34%; right: 1%;
-    transform: translateY(-50%);
-    font-family: Arial, Helvetica, sans-serif;
-    font-size: clamp(58px, 9vw, 140px);
-    font-weight: 800;
-    letter-spacing: .03em;
-    line-height: 1;
-    white-space: nowrap;
-    color: var(--hero-watermark);
-    /* 左侧品牌/描述区渐隐，水印只在右半边显现，保证正文可读 */
-    -webkit-mask-image: linear-gradient(to right, transparent 32%, #000 72%);
-    mask-image: linear-gradient(to right, transparent 32%, #000 72%);
-    pointer-events: none;
-    user-select: none;
-}
 @keyframes nv-hero-flash { from { opacity: .58; } to { opacity: 1; } }
 body.page-home .hero.hero-flash .hero-bg { animation: nv-hero-flash .42s ease both; }
 
-body.page-home .hero-inner { position: relative; padding: 34px 24px 38px; }
+body.page-home .hero-inner { position: relative; padding: 26px 24px 28px; }
 body.page-home .hero-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; }
 body.page-home .hero-brand { min-width: 0; max-width: 680px; }
 
@@ -716,13 +695,13 @@ body.page-home .hero .brand-text strong {
     font-size: 20px; font-weight: 800; max-width: none; letter-spacing: .5px;
 }
 body.page-home .hero-slogan {
-    margin: 16px 0 0; max-width: 610px;
+    margin: 12px 0 0; max-width: 610px;
     font-size: 14px; line-height: 1.85;
     color: var(--hero-sub); letter-spacing: .2px;
 }
 body.page-home .hero #current-time-container {
     display: block !important;
-    padding: 0 !important; margin: 14px 0 0 !important;
+    padding: 0 !important; margin: 12px 0 0 !important;
     background: transparent !important; border: 0 !important; box-shadow: none !important;
     color: var(--hero-sub) !important; text-align: left !important; font-size: 13.5px;
 }
@@ -770,7 +749,7 @@ body.page-home .hero-pill:hover {
     box-shadow: 0 16px 28px -16px rgba(16, 24, 40, .8);
 }
 
-body.page-home .hero .search-shell { max-width: 560px !important; margin-top: 28px; margin-bottom: 0; }
+body.page-home .hero .search-shell { max-width: 560px !important; margin-top: 20px; margin-bottom: 0; }
 body.page-home .hero .search-bar {
     background: var(--hero-glass) !important;
     border: 1px solid var(--hero-line) !important;
@@ -797,14 +776,13 @@ body.page-home .hero .search-button-text { font-size: 13px; font-weight: 600; }
 body.page-home .hero .search-hint { display: none; }
 
 @media (max-width: 640px) {
-    body.page-home .hero-inner { padding: 24px 16px 28px; }
+    body.page-home .hero-inner { padding: 22px 16px 24px; }
     body.page-home .hero-top { flex-direction: column; gap: 14px; }
     body.page-home .hero-actions { justify-content: flex-start; width: 100%; padding-top: 0; }
     body.page-home .hero .brand-text strong { font-size: 18px; }
     body.page-home .hero .brand-mark { font-size: 22px; }
     body.page-home .hero-slogan { font-size: 13px; line-height: 1.8; }
-    body.page-home .hero-bg::before { font-size: 72px; top: 22%; opacity: .6; }
-    body.page-home .hero .search-shell { margin-top: 20px; }
+    body.page-home .hero .search-shell { margin-top: 16px; }
     body.page-home .hero .search-button-text { display: none; }
     body.page-home .hero #search-engine { max-width: 92px; }
 }
