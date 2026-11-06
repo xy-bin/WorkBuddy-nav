@@ -621,39 +621,31 @@ body.page-login #login-error {
    背景为零外部依赖的渐变 + 光斑，暗色模式自动压暗。
    ============================================================ */
 body.page-home .hero {
-    --hero-ink: #172044;
-    --hero-sub: #47547a;
-    --hero-glass: rgba(255, 255, 255, .74);
-    --hero-line: rgba(255, 255, 255, .92);
-    --hero-a: #eef2ff;
-    --hero-b: #e7f3fc;
-    --hero-c: #f3ecfe;
-    --hero-glow-a: rgba(99, 102, 241, .30);
-    --hero-glow-b: rgba(6, 182, 212, .24);
-}
-body.page-home[data-hero="1"] .hero {
-    --hero-a: #fff3e8; --hero-b: #ffeaf1; --hero-c: #f4ecff;
-    --hero-glow-a: rgba(251, 146, 60, .28); --hero-glow-b: rgba(244, 114, 182, .22);
-}
-body.page-home[data-hero="2"] .hero {
-    --hero-a: #e9fbf5; --hero-b: #e6f4ff; --hero-c: #f0f8e9;
-    --hero-glow-a: rgba(16, 185, 129, .26); --hero-glow-b: rgba(14, 165, 233, .22);
-}
-body.page-home[data-hero="3"] .hero {
-    --hero-a: #fff0f6; --hero-b: #f3ecff; --hero-c: #eaf3ff;
-    --hero-glow-a: rgba(236, 72, 153, .24); --hero-glow-b: rgba(139, 92, 246, .22);
-}
-body.page-home[data-hero="4"] .hero {
-    --hero-a: #e8ecff; --hero-b: #dfe9fb; --hero-c: #eee9fb;
-    --hero-glow-a: rgba(59, 130, 246, .28); --hero-glow-b: rgba(124, 58, 237, .22);
+    --hero-ink: #2c3446;
+    --hero-sub: #3e4658;
+    --hero-blue: #2f6bff;
+    --hero-glass: rgba(255, 255, 255, .66);
+    --hero-line: rgba(255, 255, 255, .82);
+    --hero-a: #cdd6e3;
+    --hero-b: #c3cddd;
+    --hero-c: #d5dce7;
+    --hero-glow-a: rgba(255, 255, 255, .24);
+    --hero-glow-b: rgba(255, 255, 255, .16);
+    --hero-watermark: rgba(255, 255, 255, .19);
 }
 body.dark.page-home .hero {
-    --hero-ink: #f2f5ff;
-    --hero-sub: rgba(224, 231, 255, .78);
-    --hero-glass: rgba(20, 27, 52, .62);
+    --hero-ink: #eef2fb;
+    --hero-sub: #c4ccdd;
+    --hero-blue: #8db0ff;
+    --hero-glass: rgba(20, 27, 52, .58);
     --hero-line: rgba(255, 255, 255, .16);
+    --hero-a: #26304a;
+    --hero-b: #1e2740;
+    --hero-c: #2b3550;
+    --hero-glow-a: rgba(120, 150, 220, .16);
+    --hero-glow-b: rgba(90, 120, 190, .12);
+    --hero-watermark: rgba(255, 255, 255, .07);
 }
-body.dark.page-home .hero-bg { filter: brightness(.40) saturate(1.35); }
 
 body.page-home > header.hero {
     position: relative !important;
@@ -676,93 +668,103 @@ body.page-home .hero-bg {
     position: absolute;
     inset: 0;
     z-index: -1;
-    background-color: #eaf0fb;
+    background-color: #c6d0de;
     background-image:
         radial-gradient(620px 380px at var(--gx, 16%) var(--gy, 10%), var(--hero-glow-a), transparent 68%),
         radial-gradient(560px 360px at var(--hx, 88%) var(--hy, 84%), var(--hero-glow-b), transparent 66%),
         linear-gradient(118deg, var(--hero-a) 0%, var(--hero-b) 54%, var(--hero-c) 100%);
     transition: filter .5s ease;
 }
-body.page-home .hero-bg::after {
-    content: "";
+/* 参考样式里那行巨型浅色英文：改为完整、克制、不干扰阅读的水印 */
+body.page-home .hero-bg::before {
+    content: "BOOKMARK";
     position: absolute;
-    inset: 0;
-    background-image:
-        linear-gradient(rgba(255, 255, 255, .32) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255, 255, 255, .32) 1px, transparent 1px);
-    background-size: 48px 48px;
-    -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, .55), transparent 88%);
-    mask-image: linear-gradient(to bottom, rgba(0, 0, 0, .55), transparent 88%);
-    opacity: .55;
+    top: 34%; right: 1%;
+    transform: translateY(-50%);
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: clamp(58px, 9vw, 140px);
+    font-weight: 800;
+    letter-spacing: .03em;
+    line-height: 1;
+    white-space: nowrap;
+    color: var(--hero-watermark);
+    /* 左侧品牌/描述区渐隐，水印只在右半边显现，保证正文可读 */
+    -webkit-mask-image: linear-gradient(to right, transparent 32%, #000 72%);
+    mask-image: linear-gradient(to right, transparent 32%, #000 72%);
+    pointer-events: none;
+    user-select: none;
 }
 @keyframes nv-hero-flash { from { opacity: .58; } to { opacity: 1; } }
 body.page-home .hero.hero-flash .hero-bg { animation: nv-hero-flash .42s ease both; }
 
-body.page-home .hero-inner { position: relative; padding: 30px 24px 34px; }
+body.page-home .hero-inner { position: relative; padding: 34px 24px 38px; }
 body.page-home .hero-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; }
 body.page-home .hero-brand { min-width: 0; max-width: 680px; }
 
-body.page-home .hero .brand { gap: 10px; }
+/* 蓝色实心书签图标 + 蓝色标题（与参考截图一致） */
+body.page-home .hero .brand { gap: 9px; }
 body.page-home .hero .brand-mark {
-    width: 34px; height: 34px; flex: 0 0 34px;
-    border-radius: 11px; font-size: 15px;
-    background: linear-gradient(135deg, #4f46e5, #7c3aed);
-    box-shadow: 0 8px 18px -10px rgba(79, 70, 229, .9);
+    width: 26px; height: 30px; flex: 0 0 26px;
+    border-radius: 0 !important; font-size: 25px; line-height: 30px;
+    display: grid; place-items: center;
+    background: transparent !important;
+    color: var(--hero-blue) !important;
+    box-shadow: none !important;
 }
 body.page-home .hero .brand-text strong {
-    color: var(--hero-ink) !important;
-    font-size: 17px; font-weight: 750; max-width: none;
+    color: var(--hero-blue) !important;
+    font-size: 20px; font-weight: 800; max-width: none; letter-spacing: .5px;
 }
 body.page-home .hero-slogan {
-    margin: 10px 0 0; max-width: 600px;
-    font-size: 13px; line-height: 1.8;
+    margin: 16px 0 0; max-width: 610px;
+    font-size: 14px; line-height: 1.85;
     color: var(--hero-sub); letter-spacing: .2px;
 }
 body.page-home .hero #current-time-container {
-    display: flex !important;
-    flex-direction: row; flex-wrap: wrap; align-items: center; gap: 10px;
-    padding: 0 !important; margin: 10px 0 0 !important;
+    display: block !important;
+    padding: 0 !important; margin: 14px 0 0 !important;
     background: transparent !important; border: 0 !important; box-shadow: none !important;
-    color: var(--hero-sub) !important; text-align: left !important; font-size: 12px;
+    color: var(--hero-sub) !important; text-align: left !important; font-size: 13.5px;
 }
 body.page-home .hero #current-time {
-    font-size: 13px; font-weight: 700;
-    color: var(--hero-ink) !important; margin: 0 !important;
+    font-size: 13.5px; font-weight: 500;
+    color: var(--hero-sub) !important; margin: 0 !important;
     font-variant-numeric: tabular-nums;
 }
-body.page-home .hero .hero-time-extra { opacity: .72; font-size: 11.5px; }
-body.page-home .hero .hero-time-extra:not(:empty)::before {
-    content: "·"; margin-right: 10px; opacity: .7;
-}
-body.page-home .hero .hero-time-extra:empty { display: none; }
+/* 参考样式只显示一行公历日期时间，农历 / 节日倒计时不再占位 */
+body.page-home .hero .hero-time-extra { display: none !important; }
 
 body.page-home .hero-actions {
-    display: flex; flex-direction: column; align-items: flex-end;
-    gap: 14px; flex: 0 0 auto;
+    position: relative;
+    display: flex; align-items: flex-start; justify-content: flex-end;
+    flex: 0 0 auto; padding-top: 4px;
 }
-body.page-home .hero-tools { display: flex; gap: 8px; }
-body.page-home .hero-icon-btn,
+body.page-home .hero-tip {
+    position: absolute; top: 46px; right: 0;
+    max-width: 270px; padding: 8px 14px;
+    border-radius: 10px;
+    background: rgba(30, 39, 58, .90); color: #fff;
+    font-size: 12px; line-height: 1.5;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    opacity: 0; transform: translateY(-6px);
+    pointer-events: none; z-index: 5;
+    transition: opacity .22s ease, transform .22s ease;
+}
+body.page-home .hero-tip.is-visible { opacity: 1; transform: translateY(0); }
+body.page-home .hero-tools { display: flex; gap: 9px; }
 body.page-home .hero-pill {
     background: var(--hero-glass) !important;
     border: 1px solid var(--hero-line) !important;
     color: var(--hero-ink) !important;
     -webkit-backdrop-filter: blur(12px);
     backdrop-filter: blur(12px);
-    box-shadow: 0 10px 24px -16px rgba(16, 24, 40, .75);
+    box-shadow: 0 10px 24px -18px rgba(16, 24, 40, .75);
     font-weight: 600;
+    border-radius: 999px !important;
+    padding: 8px 17px; font-size: 12.5px;
+    display: inline-flex; align-items: center; gap: 7px; white-space: nowrap;
     transition: transform .2s ease, box-shadow .2s ease;
 }
-body.page-home .hero-icon-btn {
-    width: 38px; height: 38px;
-    border-radius: 50% !important;
-    display: grid; place-items: center; font-size: 15px;
-}
-body.page-home .hero-pill {
-    border-radius: 999px !important;
-    padding: 7px 15px; font-size: 12px;
-    display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
-}
-body.page-home .hero-icon-btn:hover,
 body.page-home .hero-pill:hover {
     transform: translateY(-2px);
     box-shadow: 0 16px 28px -16px rgba(16, 24, 40, .8);
@@ -795,10 +797,13 @@ body.page-home .hero .search-button-text { font-size: 13px; font-weight: 600; }
 body.page-home .hero .search-hint { display: none; }
 
 @media (max-width: 640px) {
-    body.page-home .hero-inner { padding: 22px 16px 26px; }
-    body.page-home .hero-top { flex-direction: column; gap: 16px; }
-    body.page-home .hero-actions { flex-direction: row; align-items: center; justify-content: space-between; width: 100%; }
-    body.page-home .hero-slogan { font-size: 12.5px; line-height: 1.7; }
+    body.page-home .hero-inner { padding: 24px 16px 28px; }
+    body.page-home .hero-top { flex-direction: column; gap: 14px; }
+    body.page-home .hero-actions { justify-content: flex-start; width: 100%; padding-top: 0; }
+    body.page-home .hero .brand-text strong { font-size: 18px; }
+    body.page-home .hero .brand-mark { font-size: 22px; }
+    body.page-home .hero-slogan { font-size: 13px; line-height: 1.8; }
+    body.page-home .hero-bg::before { font-size: 72px; top: 22%; opacity: .6; }
     body.page-home .hero .search-shell { margin-top: 20px; }
     body.page-home .hero .search-button-text { display: none; }
     body.page-home .hero #search-engine { max-width: 92px; }

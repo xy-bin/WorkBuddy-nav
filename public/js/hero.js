@@ -1,29 +1,16 @@
 /* ============================================================
-   首页 Hero 交互：背景配色切换 + 公告铃铛
-   - 配色为纯 CSS 渐变，零外部图片依赖，避免随机图 API 失效或跨域问题
-   - 选择写入 localStorage，刷新页面后保持
-   - 依赖 jQuery（head 中已引入）与首页 DOM，非首页会自动跳过
+   首页 Hero 交互
+   - 刷新：重排纯 CSS 背景光斑（零外部图片依赖）
+   - 随机：随机打开导航里的一个网址（新标签，失败则当前页跳转）
+   - 依赖 jQuery 与首页 DOM，非首页自动跳过
    ============================================================ */
 (function () {
     'use strict';
 
-    var STORAGE_KEY = 'nav-hero-theme';
-    var THEME_COUNT = 5;
     var $hero = $('#hero');
     if (!$hero.length) return;
 
-    function readTheme() {
-        try {
-            var n = parseInt(localStorage.getItem(STORAGE_KEY), 10);
-            if (isNaN(n)) return 0;
-            return ((n % THEME_COUNT) + THEME_COUNT) % THEME_COUNT;
-        } catch (_) { return 0; }
-    }
-
-    function saveTheme(n) {
-        try { localStorage.setItem(STORAGE_KEY, String(n)); } catch (_) { /* 隐私模式下忽略 */ }
-    }
-
+    /* ---------------- 背景光斑 ---------------- */
     function shuffleSpots() {
         var pct = function (min, max) {
             return (min + Math.random() * (max - min)).toFixed(1) + '%';
@@ -35,40 +22,135 @@
         style.setProperty('--hy', pct(58, 94));
     }
 
-    function apply(theme, animate) {
-        document.body.setAttribute('data-hero', String(theme));
-        shuffleSpots();
-        if (animate) {
-            $hero.removeClass('hero-flash');
-            // 强制重排，保证连续点击时动画能重新播放
-            void $hero[0].offsetWidth;
-            $hero.addClass('hero-flash');
-            window.setTimeout(function () { $hero.removeClass('hero-flash'); }, 450);
-        }
+    function flash() {
+        $hero.removeClass('hero-flash');
+        void $hero[0].offsetWidth;              // 强制重排，连续点击也能重播动画
+        $hero.addClass('hero-flash');
+        window.setTimeout(function () { $hero.removeClass('hero-flash'); }, 450);
     }
 
-    apply(readTheme(), false);
+    shuffleSpots();
 
-    // 刷新：保持当前配色，重新生成光斑位置
+    /* ---------------- 随机打开站内网址 ---------------- */
+    var links = [];
+    var loading = false;
+    var lastUrl = '';
+    var tipTimer = null;
+
+    // 只允许 http/https，杜绝 javascript: / data: 之类的伪协议
+    function safeUrl(raw) {
+        if (typeof raw !== 'string' || !raw.trim()) return '';
+        var v = raw.trim();
+        if (!/^https?:\/\//i.test(v)) return '';
+        try {
+            var u = new URL(v);
+            if (u.protocol !== 'http:' && u.protocol !== 'https:') return '';
+            return u.href;
+        } catch (_) { return ''; }
+    }
+
+    function uniqueByName(list) {
+        var seen = Object.create(null);
+        return list.filter(function (item) {
+            if (!item.url || seen[item.url]) return false;
+            seen[item.url] = true;
+            return true;
+        });
+    }
+
+    function fromApi(data) {
+        var out = [];
+        if (!Array.isArray(data)) return out;
+        data.forEach(function (cat) {
+            var children = (cat && (cat.links || cat.bookmarks)) || [];
+            children.forEach(function (l) {
+                var url = safeUrl(l.link_url || l.bookmark_url || l.url);
+                if (url) out.push({ name: l.link_name || l.bookmark_name || '', url: url });
+            });
+        });
+        return uniqueByName(out);
+    }
+
+    // 兜底：接口不可用时直接从已渲染的分类卡片取链接
+    function fromDom() {
+        var out = [];
+        $('#category-container a[href]').each(function () {
+            var url = safeUrl(this.getAttribute('href'));
+            if (url) out.push({ name: $(this).text().trim(), url: url });
+        });
+        return uniqueByName(out);
+    }
+
+    function loadLinks(done) {
+        if (loading) { done(); return; }
+        loading = true;
+        $.getJSON('/api/data', function (data) {
+            links = fromApi(data);
+            if (!links.length) links = fromDom();
+        }).always(function () {
+            loading = false;
+            if (!links.length) links = fromDom();
+            done();
+        });
+    }
+
+    // 轻量提示，避免新标签被拦截时按钮看起来「没反应」
+    function showTip(text) {
+        var $tip = $('#hero-tip');
+        if (!$tip.length) return;
+        $tip.text(text).addClass('is-visible');
+        window.clearTimeout(tipTimer);
+        tipTimer = window.setTimeout(function () { $tip.removeClass('is-visible'); }, 2600);
+    }
+
+    function openRandom(win) {
+        if (!links.length) {
+            if (win && !win.closed) win.close();
+            showTip('暂时没有可打开的网址');
+            return;
+        }
+        var pool = links;
+        if (links.length > 1 && lastUrl) {
+            pool = links.filter(function (l) { return l.url !== lastUrl; });
+        }
+        var pick = pool[Math.floor(Math.random() * pool.length)];
+        lastUrl = pick.url;
+
+        if (win && !win.closed) {
+            win.location.replace(pick.url);
+        } else {
+            var opened = window.open(pick.url, '_blank', 'noopener,noreferrer');
+            if (!opened) window.location.href = pick.url;   // 弹窗被拦截则当前页跳转
+        }
+        showTip(pick.name ? '已随机打开：' + pick.name : '已随机打开一个网址');
+    }
+
+    // 进入页面就预取，保证点击时能同步打开新标签
+    loadLinks(function () { /* 静默缓存 */ });
+    // 分类卡片由 main.js 稍后渲染，DOM 就绪后再补一次兜底
+    $(function () { if (!links.length) links = fromDom(); });
+
     $('#hero-refresh-btn').on('click', function () {
-        apply(readTheme(), true);
+        shuffleSpots();
+        flash();
     });
 
-    // 随机：换一套与当前不同的配色
     $('#hero-random-btn').on('click', function () {
-        var current = readTheme();
-        var next = current;
-        while (next === current) next = Math.floor(Math.random() * THEME_COUNT);
-        saveTheme(next);
-        apply(next, true);
-    });
+        if (!links.length) links = fromDom();
+        if (links.length) { openRandom(null); return; }
 
-    // 公告铃铛：重新弹出公告浮层（与 main.js 的显隐 class 保持一致）
-    $('#hero-notice-btn').on('click', function () {
-        var $toast = $('#announcement-toast');
-        $toast.css('top', (Math.ceil($hero[0].getBoundingClientRect().height) + 14) + 'px');
-        $toast
-            .removeClass('-translate-y-full opacity-0')
-            .addClass('translate-y-0 opacity-100');
+        // 数据尚未就绪：先在用户手势中开一个占位标签，避免后续被浏览器拦截
+        var pending = window.open('', '_blank');
+        if (pending) {
+            try {
+                pending.document.title = '正在前往…';
+                pending.document.write(
+                    '<meta charset="utf-8"><p style="font:14px/1.7 sans-serif;padding:28px;color:#3b4252">' +
+                    '正在随机挑选一个网址…</p>'
+                );
+                pending.document.close();
+            } catch (_) { /* 跨域占位页不可写时忽略 */ }
+        }
+        loadLinks(function () { openRandom(pending); });
     });
 })();

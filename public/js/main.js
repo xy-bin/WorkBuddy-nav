@@ -10,10 +10,14 @@ $(document).ready(function() {
                 if (response.success) {
                     const settings = response.data;
                     
-                    // 更新网站标题
+                    // 更新网站标题：旧版默认标题不再覆盖新版首屏品牌名「拾光书签」
+                    // 后台改成任意其它名称后仍会正常联动到标签页与首屏
                     if (settings.site_title) {
-                        $('#site-title').text(settings.site_title);
-                        $('#brand-name').text(settings.site_title);
+                        const title = String(settings.site_title).trim();
+                        const legacyTitles = ['崇尚专注 乐于分享', '聚合导航', '我的聚合导航站', '我的聚合导航站 - 实用网站导航集合'];
+                        const isLegacy = legacyTitles.indexOf(title) !== -1;
+                        $('#site-title').text(isLegacy ? '拾光书签' : title);
+                        if (!isLegacy) $('#brand-name').text(title);
                     }
                     
                     // 更新网站关键词
@@ -97,13 +101,13 @@ $(document).ready(function() {
     // 显示公告悬浮框
     function showAnnouncementToast() {
         const toast = $('#announcement-toast');
-        // 渐变首屏：浮层下移到 Hero 之下，避免盖住右上角铃铛与背景控制按钮
+        // 首屏：浮层下移到 Hero 之下，避免盖住右上角的刷新 / 随机按钮
         const hero = document.getElementById('hero');
         if (hero) {
             toast.css('top', (Math.ceil(hero.getBoundingClientRect().height) + 14) + 'px');
         }
         toast.removeClass('-translate-y-full opacity-0').addClass('translate-y-0 opacity-100');
-        // 渐变首屏下浮层会压住第一行书签卡片，展示数秒后自动收起；铃铛可随时再次打开
+        // 浮层会压住第一行书签卡片，展示数秒后自动收起
         window.clearTimeout(window.__navToastTimer);
         window.__navToastTimer = window.setTimeout(function () {
             hideAnnouncementToast();
@@ -292,16 +296,11 @@ $(document).ready(function() {
     // ************ 功能2：实时显示当前时间（包含农历和节日倒计时） ************
     function updateCurrentTime() {
         let now = new Date();
-        // 格式化公历时间
-        let gregorianStr = now.toLocaleString("zh-CN", {
-            year: "numeric",
-            month: "2-digit",
-            day: "2-digit",
-            hour: "2-digit",
-            minute: "2-digit",
-            second: "2-digit",
-            weekday: "long"
-        });
+        // 格式化公历时间：2026年11月07日星期六 05:59:53
+        const pad2 = (n) => String(n).padStart(2, '0');
+        const weekdays = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
+        let gregorianStr = now.getFullYear() + '年' + pad2(now.getMonth() + 1) + '月' + pad2(now.getDate()) + '日' +
+            weekdays[now.getDay()] + ' ' + pad2(now.getHours()) + ':' + pad2(now.getMinutes()) + ':' + pad2(now.getSeconds());
         
         // 获取农历日期
         let lunarDateInfo = getLunarDate(now);

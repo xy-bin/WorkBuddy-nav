@@ -43,7 +43,7 @@
     <!-- 5. Tailwind 自定义配置（可选） -->
     <script src="js/tailwind-config.js"></script>
     <!-- 6. 视觉主题（纯 CSS 增强，须在 Tailwind CDN 之后加载） -->
-    <link rel="stylesheet" href="res/nav-theme.css?v=20261107c">
+    <link rel="stylesheet" href="res/nav-theme.css?v=20261107d">
     <!-- 结构化数据（JSON-LD） -->
     <script type="application/ld+json">
     {
@@ -80,7 +80,7 @@
                     <a class="brand" href="/" aria-label="返回首页">
                         <span class="brand-mark"><i class="fa fa-bookmark"></i></span>
                         <span class="brand-text">
-                            <strong id="brand-name">聚合导航</strong>
+                            <strong id="brand-name">拾光书签</strong>
                         </span>
                     </a>
                     <p class="hero-slogan" id="brand-slogan">捕捉互联网闪光点的导航工具，整理、定位、收藏值得记住的网站，让每一次点击都成为有价值的停留。</p>
@@ -91,13 +91,11 @@
                     </div>
                 </div>
                 <div class="hero-actions">
-                    <button type="button" id="hero-notice-btn" class="hero-icon-btn" title="查看公告" aria-label="查看公告">
-                        <i class="fa fa-bell"></i>
-                    </button>
                     <div class="hero-tools">
                         <button type="button" id="hero-refresh-btn" class="hero-pill" title="刷新背景"><i class="fa fa-refresh"></i>刷新</button>
-                        <button type="button" id="hero-random-btn" class="hero-pill" title="随机切换背景"><i class="fa fa-random"></i>随机</button>
+                        <button type="button" id="hero-random-btn" class="hero-pill" title="随机打开一个站内网址"><i class="fa fa-random"></i>随机</button>
                     </div>
+                    <div id="hero-tip" class="hero-tip" role="status" aria-live="polite"></div>
                 </div>
             </div>
             <!-- 搜索框（站内链接搜索 + 网络搜索） -->
@@ -245,9 +243,9 @@
         </div>
     </div>
     <!-- 引入核心JS脚本（最后引入，确保DOM加载完成） -->
-    <script src="js/main.js?v=20261107c"></script>
-    <!-- Hero 背景切换 / 公告铃铛 -->
-    <script src="js/hero.js?v=20261107c"></script>
+    <script src="js/main.js?v=20261107d"></script>
+    <!-- Hero 背景刷新 / 随机打开站内网址 -->
+    <script src="js/hero.js?v=20261107d"></script>
     <!-- 引入提交书签脚本 -->
     <script src="js/submit-bookmark.js"></script>
     <!-- 主题预览功能 -->
