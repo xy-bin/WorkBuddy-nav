@@ -16,8 +16,15 @@ name = "navxybintop"
 compatibility_date = "2026-11-06"
 pages_build_output_dir = "./public"
 
-# 线上：Dashboard → Settings → Functions → KV namespace bindings
-#       绑定变量名必须为 NAV_KV（代码里 env.NAV_KV）
+# ---------------- 上线必做：KV 绑定 + 环境变量 ----------------
+# 【KV 绑定】项目 →「设置」→ 右侧「绑定」→「添加」→「KV namespace」
+#   Variable name 必须精确填 NAV_KV（代码里 env.NAV_KV，大小写敏感）
+#   还没有命名空间：左侧「存储和数据库」→ Workers KV → 创建，再回来选它
+#   生产 / 预览 环境各绑一次；保存后必须「重新部署」才生效
+#   未绑定时 /api/data 会 500（env.NAV_KV 是 undefined），前台数据加载失败
+# 【变量和机密】「设置」→「变量和机密」→「添加」：
+#   SESSION_SECRET(加密)、ADMIN_PASSWORD_HASH(加密)、ADMIN_USERNAME、JSADD_TOKEN(可选/加密)
+#   取值生成方式见 .dev.vars.example
 # 本地：npm run dev 会用 --kv NAV_KV 映射到本地模拟命名空间，无需真实 id
 # 若改用 wrangler pages deploy 命令行部署，取消注释并填入真实 namespace id：
 # [[kv_namespaces]]
