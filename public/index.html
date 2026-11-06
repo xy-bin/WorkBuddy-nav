@@ -42,6 +42,8 @@
     <link rel="mask-icon" href="res/favicon.ico" color="#3B82F6">
     <!-- 5. Tailwind 自定义配置（可选） -->
     <script src="js/tailwind-config.js"></script>
+    <!-- 6. 视觉主题（纯 CSS 增强，须在 Tailwind CDN 之后加载） -->
+    <link rel="stylesheet" href="res/nav-theme.css?v=20261107a">
     <!-- 结构化数据（JSON-LD） -->
     <script type="application/ld+json">
     {
@@ -68,12 +70,19 @@
     }
     </script>
 </head>
-<body class="bg-gray-50 dark:bg-gray-900 dark:text-white min-h-screen">
+<body class="bg-gray-50 dark:bg-gray-900 dark:text-white min-h-screen page-home">
     <!-- 头部区域（时间、搜索框、公告） -->
     <header class="bg-white dark:bg-gray-800 shadow-sm py-4 px-2 md:px-4">
         <div class="container mx-auto max-w-7xl">
-            <!-- 顶部：时间 -->
+            <!-- 顶部：品牌 + 时间 -->
             <div class="flex flex-col md:flex-row justify-between items-center mb-4">
+                <a class="brand mb-3 md:mb-0" href="/" aria-label="返回首页">
+                    <span class="brand-mark"><i class="fa fa-compass"></i></span>
+                    <span class="brand-text">
+                        <strong id="brand-name">聚合导航</strong>
+                        <small>常用站点 · 一触即达</small>
+                    </span>
+                </a>
                 <!-- 时间显示容器 -->
                 <div id="current-time-container" class="text-gray-600 dark:text-gray-300 mb-2 md:mb-0 text-center md:text-left">
                     <div id="holiday-countdown" class="text-sm opacity-80"></div>
@@ -82,8 +91,8 @@
                 </div>
             </div>
             <!-- 搜索框（站内链接搜索 + 网络搜索） -->
-            <div class="w-full max-w-xl mx-auto">
-                <div class="flex items-center">
+            <div class="w-full max-w-xl mx-auto search-shell">
+                <div class="flex items-center search-bar">
                     <div class="relative flex-1">
                         <input 
                             type="text" 
@@ -105,6 +114,7 @@
                         <i class="fa fa-search"></i>
                     </button>
                 </div>
+                <p class="search-hint">站内书签即时检索 · 也可切换搜索引擎搜全网</p>
             </div>
         </div>
     </header>

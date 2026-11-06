@@ -13,6 +13,7 @@ $(document).ready(function() {
                     // 更新网站标题
                     if (settings.site_title) {
                         $('#site-title').text(settings.site_title);
+                        $('#brand-name').text(settings.site_title);
                     }
                     
                     // 更新网站关键词
