@@ -1,8 +1,17 @@
-# Cloudflare Pages 项目配置
-# GitHub 集成：Root directory = pages（若仓库根就是本目录则留空）
-#              Build command  = 留空（public/ 已提交，零构建）
-#              Build output directory = public
-#              Functions directory   = functions（默认）
+# ============================================================
+# 这是 Cloudflare **Pages** 项目，不是 Workers 项目！
+# 不要执行 `wrangler deploy` / `wrangler dev`，否则会报：
+#   "Missing entry-point to Worker script or to assets directory"
+# 正确命令（在本目录执行）：
+#   本地预览 : npm run dev      (= wrangler pages dev ./public --kv NAV_KV ...)
+#   CLI 部署 : npm run deploy   (= wrangler pages deploy ./public)
+#   Functions 构建检查: wrangler pages functions build ./functions --outdir ./dist
+# ============================================================
+# Dashboard → Workers & Pages → Create → **Pages** → Connect to Git
+#   Root directory         : 留空（GitHub 仓库根就是本目录）
+#   Build command          : 留空（public/ 已提交，零构建）
+#   Build output directory : public
+#   Functions directory    : functions（默认）
 name = "navxybintop"
 compatibility_date = "2026-11-06"
 pages_build_output_dir = "./public"
