@@ -1,0 +1,44 @@
+# ============================================================
+# 本地开发 / 命令行部署的参考配置 —— 请勿在仓库根改名为 wrangler.toml！
+#
+# 原因：Cloudflare Pages 一旦在仓库根检测到 wrangler.toml（且含
+#   pages_build_output_dir），就把它当作项目配置的唯一真源，Dashboard 里
+#   「绑定」与「变量和机密」的「+ 添加」会变灰，提示
+#   "此项目的绑定在通过 wrangler.toml 进行管理"。
+#   本项目 SESSION_SECRET / ADMIN_PASSWORD_HASH / JSADD_TOKEN 绝不能写进公开仓库，
+#   所以线上统一由 Dashboard 管理绑定与机密。
+#
+# 线上（Git 集成项目）在 Dashboard 配置：
+#   设置 → 绑定 → 添加 → KV namespace，Variable name = NAV_KV
+#   设置 → 变量和机密 → 添加：ADMIN_USERNAME / ADMIN_PASSWORD_HASH /
+#       SESSION_SECRET / JSADD_TOKEN（密钥类点「加密」）
+#   构建输出目录 public、兼容日期 2026-11-06 也在 Dashboard 设置
+#
+# 本项目是 **Pages** 项目，不是 Workers 项目！
+# 不要执行 `wrangler deploy` / `wrangler dev`，否则会报：
+#   "Missing entry-point to Worker script or to assets directory"
+# 正确命令（在本目录执行）：
+#   本地预览 : npm run dev
+#   CLI 部署 : npm run deploy
+#   Functions 构建检查: wrangler pages functions build ./functions --outdir ./dist
+# ============================================================
+# 如需启用本文件：复制为 wrangler.toml 后仅用于本地，且不要提交。
+name = "workbuddy-nav"
+compatibility_date = "2026-11-06"
+pages_build_output_dir = "./public"
+
+# ---------------- 线上配置速查（Dashboard 操作，不写进仓库） ----------------
+# 【KV 绑定】项目 →「设置」→ 右侧「绑定」→「添加」→「KV namespace」
+#   Variable name 必须精确填 NAV_KV（代码里 env.NAV_KV，大小写敏感）
+#   还没有命名空间：左侧「存储和数据库」→ Workers KV → 创建，再回来选它
+#   生产 / 预览 环境各绑一次；保存后必须「重新部署」才生效
+#   未绑定时 /api/data 会 500（env.NAV_KV 是 undefined），前台数据加载失败
+# 【变量和机密】「设置」→「变量和机密」→「添加」：
+#   SESSION_SECRET(加密)、ADMIN_PASSWORD_HASH(加密)、ADMIN_USERNAME、JSADD_TOKEN(可选/加密)
+#   取值生成方式见 .dev.vars.example
+# 本地：npm run dev 会用 --kv NAV_KV 映射到本地模拟命名空间，无需真实 id
+# 仅当重新启用「配置文件模式」时才需要下面这段；届时 secrets 必须用 CLI 上传：
+#   npx wrangler pages secret bulk .dev.vars --project-name workbuddy-nav
+# [[kv_namespaces]]
+# binding = "NAV_KV"
+# id = "REPLACE_WITH_KV_NAMESPACE_ID"
