@@ -21,9 +21,10 @@ $(document).ready(function() {
                         $('#site-keywords').attr('content', settings.site_keywords);
                     }
                     
-                    // 更新网站描述
+                    // 更新网站描述（同步到首屏 Hero 标语）
                     if (settings.site_description) {
                         $('#site-description').attr('content', settings.site_description);
+                        $('#brand-slogan').text(settings.site_description);
                     }
                     
                     // 更新网站图标
@@ -96,6 +97,11 @@ $(document).ready(function() {
     // 显示公告悬浮框
     function showAnnouncementToast() {
         const toast = $('#announcement-toast');
+        // 渐变首屏：浮层下移到 Hero 之下，避免盖住右上角铃铛与背景控制按钮
+        const hero = document.getElementById('hero');
+        if (hero) {
+            toast.css('top', (Math.ceil(hero.getBoundingClientRect().height) + 14) + 'px');
+        }
         toast.removeClass('-translate-y-full opacity-0').addClass('translate-y-0 opacity-100');
         // 不再记录显示次数，每次页面加载都显示
     }

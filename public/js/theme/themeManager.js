@@ -174,21 +174,36 @@ class ThemeManager {
     getThemeSettings() {
         const defaultSettings = {
             theme: 'light',
-            bgImageEnabled: true,
+            bgImageEnabled: false, // 渐变首屏：默认不再叠加全屏随机照片
             bgImageType: 'random',
             bgImageUrl: '',
             bgImageApi: 'https://picsum.photos/1920/1080' // 使用更可靠的Picsum Photos作为默认API
         };
+        const MIGRATION_KEY = 'nav-hero-gradient-v2';
 
         try {
             const savedSettings = JSON.parse(localStorage.getItem('themeSettings'));
-            
+
             // 如果保存的设置中使用了可能被阻止的Unsplash API，自动替换为Picsum API
             if (savedSettings && savedSettings.bgImageApi && savedSettings.bgImageApi.includes('unsplash.com')) {
                 savedSettings.bgImageApi = defaultSettings.bgImageApi;
                 console.log('自动替换Unsplash API为Picsum API');
             }
-            
+
+            // 一次性迁移：旧版默认会加载 picsum 随机照片，容易随机到带大字的图片，
+            // 与渐变首屏冲突。仅当用户从未自定义过背景配置时关闭；
+            // 之后在后台「主题设置」里的显式开启不受影响。
+            if (savedSettings && !localStorage.getItem(MIGRATION_KEY)) {
+                const isLegacyDefault = savedSettings.bgImageEnabled === true &&
+                    savedSettings.bgImageType === 'random' && !savedSettings.bgImageUrl &&
+                    (!savedSettings.bgImageApi || savedSettings.bgImageApi === defaultSettings.bgImageApi);
+                if (isLegacyDefault) {
+                    savedSettings.bgImageEnabled = false;
+                    localStorage.setItem('themeSettings', JSON.stringify(savedSettings));
+                }
+                localStorage.setItem(MIGRATION_KEY, '1');
+            }
+
             return { ...defaultSettings, ...savedSettings };
         } catch (error) {
             console.error('主题设置读取失败:', error);

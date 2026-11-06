@@ -43,7 +43,7 @@
     <!-- 5. Tailwind 自定义配置（可选） -->
     <script src="js/tailwind-config.js"></script>
     <!-- 6. 视觉主题（纯 CSS 增强，须在 Tailwind CDN 之后加载） -->
-    <link rel="stylesheet" href="res/nav-theme.css?v=20261107b">
+    <link rel="stylesheet" href="res/nav-theme.css?v=20261107c">
     <!-- 结构化数据（JSON-LD） -->
     <script type="application/ld+json">
     {
@@ -71,23 +71,33 @@
     </script>
 </head>
 <body class="bg-gray-50 dark:bg-gray-900 dark:text-white min-h-screen page-home">
-    <!-- 头部区域（时间、搜索框、公告） -->
-    <header class="bg-white dark:bg-gray-800 shadow-sm py-4 px-2 md:px-4">
-        <div class="container mx-auto max-w-7xl">
-            <!-- 顶部：品牌 + 时间 -->
-            <div class="flex flex-col md:flex-row justify-between items-center mb-4">
-                <a class="brand mb-3 md:mb-0" href="/" aria-label="返回首页">
-                    <span class="brand-mark"><i class="fa fa-compass"></i></span>
-                    <span class="brand-text">
-                        <strong id="brand-name">聚合导航</strong>
-                        <small>常用站点 · 一触即达</small>
-                    </span>
-                </a>
-                <!-- 时间显示容器 -->
-                <div id="current-time-container" class="text-gray-600 dark:text-gray-300 mb-2 md:mb-0 text-center md:text-left">
-                    <div id="holiday-countdown" class="text-sm opacity-80"></div>
-                    <div id="lunar-date" class="text-sm opacity-90"></div>
-                    <div id="current-time"></div>
+    <!-- 头部 Hero：品牌 / 标语 / 时间 / 公告 / 背景控制 / 搜索 -->
+    <header class="hero" id="hero">
+        <div class="hero-bg" aria-hidden="true"></div>
+        <div class="container mx-auto max-w-7xl hero-inner">
+            <div class="hero-top">
+                <div class="hero-brand">
+                    <a class="brand" href="/" aria-label="返回首页">
+                        <span class="brand-mark"><i class="fa fa-bookmark"></i></span>
+                        <span class="brand-text">
+                            <strong id="brand-name">聚合导航</strong>
+                        </span>
+                    </a>
+                    <p class="hero-slogan" id="brand-slogan">捕捉互联网闪光点的导航工具，整理、定位、收藏值得记住的网站，让每一次点击都成为有价值的停留。</p>
+                    <div id="current-time-container" class="hero-time">
+                        <span id="current-time" class="hero-time-main"></span>
+                        <span id="lunar-date" class="hero-time-extra"></span>
+                        <span id="holiday-countdown" class="hero-time-extra"></span>
+                    </div>
+                </div>
+                <div class="hero-actions">
+                    <button type="button" id="hero-notice-btn" class="hero-icon-btn" title="查看公告" aria-label="查看公告">
+                        <i class="fa fa-bell"></i>
+                    </button>
+                    <div class="hero-tools">
+                        <button type="button" id="hero-refresh-btn" class="hero-pill" title="刷新背景"><i class="fa fa-refresh"></i>刷新</button>
+                        <button type="button" id="hero-random-btn" class="hero-pill" title="随机切换背景"><i class="fa fa-random"></i>随机</button>
+                    </div>
                 </div>
             </div>
             <!-- 搜索框（站内链接搜索 + 网络搜索） -->
@@ -111,7 +121,7 @@
                         <option value="so">360搜索</option>
                     </select>
                     <button id="search-button" class="px-4 py-2 border border-gray-300 dark:border-gray-700 bg-primary text-white rounded-r-lg hover:bg-primary/90 transition-colors">
-                        <i class="fa fa-search"></i>
+                        <i class="fa fa-search"></i><span class="search-button-text">搜索</span>
                     </button>
                 </div>
                 <p class="search-hint">站内书签即时检索 · 也可切换搜索引擎搜全网</p>
@@ -236,6 +246,8 @@
     </div>
     <!-- 引入核心JS脚本（最后引入，确保DOM加载完成） -->
     <script src="js/main.js"></script>
+    <!-- Hero 背景切换 / 公告铃铛 -->
+    <script src="js/hero.js"></script>
     <!-- 引入提交书签脚本 -->
     <script src="js/submit-bookmark.js"></script>
     <!-- 主题预览功能 -->
