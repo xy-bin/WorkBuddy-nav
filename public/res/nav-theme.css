@@ -851,3 +851,19 @@ body.page-home #category-container a.min-w-0 { min-width: 0; }
     body.page-login h1 { font-size: 20px !important; }
     body.page-login form#login-form { margin-top: 4px; }
 }
+
+/* ---------------- 滚动条：隐藏但保留滚动能力 ----------------
+   滚动条不再占据布局宽度，切换标签、打开弹层时不会因为
+   滚动条时有时无导致整页左右晃动。横向容器仍可滑动/触控横滑。 */
+html, body {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+* { scrollbar-width: none; }
+html::-webkit-scrollbar,
+body::-webkit-scrollbar,
+*::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+}
