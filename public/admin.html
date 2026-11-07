@@ -39,8 +39,8 @@
         }
     </style>
     <!-- 视觉主题（纯 CSS 增强，须在 Tailwind CDN 之后加载） -->
-    <link rel="stylesheet" href="res/nav-theme.css?v=20261107g">
-    <link rel="stylesheet" href="res/admin-theme.css?v=20261107g">
+    <link rel="stylesheet" href="res/nav-theme.css?v=20261107h">
+    <link rel="stylesheet" href="res/admin-theme.css?v=20261107h">
 </head>
 <body class="bg-gray-50 min-h-screen page-admin">
     <!-- 顶部导航栏（控制台风格） -->
@@ -69,83 +69,8 @@
         </div>
     </header>
 
-    <!-- 移动端菜单按钮 -->
-    <div class="md:hidden container mx-auto px-6 py-2">
-        <button id="admin-mobile-menu-btn" class="flex items-center justify-between w-full px-4 py-3 bg-white rounded-lg shadow-sm">
-            <span class="font-medium text-gray-800">管理菜单</span>
-            <i class="fa fa-bars text-primary"></i>
-        </button>
-    </div>
-
-    <!-- 主体内容 -->
-    <main class="container mx-auto px-6 py-8">
-        <div class="flex flex-col lg:flex-row gap-8">
-            <!-- 左侧菜单 -->
-            <aside class="lg:w-64 w-full">
-                <div id="admin-sidebar" class="bg-white rounded-xl shadow-sm p-4 sticky top-4">
-                    <ul class="space-y-1">
-                        <li class="admin-nav-group">工作台</li>
-                        <li>
-                            <a href="#dashboard" class="flex items-center p-3 rounded-lg bg-primary text-white font-medium">
-                                <i class="fa fa-dashboard mr-3"></i>
-                                <span>仪表盘</span>
-                            </a>
-                        </li>
-                        <li class="admin-nav-group">内容管理</li>
-                        <li>
-                            <a href="#category-management" class="flex items-center p-3 rounded-lg hover:bg-secondary transition-colors">
-                                <i class="fa fa-folder-open mr-3"></i>
-                                <span>分类管理</span>
-                            </a>
-                        </li>
-                        <li>
-                            <a href="#link-management" class="flex items-center p-3 rounded-lg hover:bg-secondary transition-colors">
-                                <i class="fa fa-link mr-3"></i>
-                                <span>书签管理</span>
-                            </a>
-                        </li>
-                        <li>
-                            <a href="#pending-bookmarks" class="flex items-center p-3 rounded-lg hover:bg-secondary transition-colors">
-                                <i class="fa fa-clock-o mr-3"></i>
-                                <span>待审核书签</span>
-                            </a>
-                        </li>
-                        <li class="admin-nav-group">站点配置</li>
-                        <li>
-                            <a href="#theme-settings" class="flex items-center p-3 rounded-lg hover:bg-secondary transition-colors">
-                                <i class="fa fa-paint-brush mr-3"></i>
-                                <span>主题设置</span>
-                            </a>
-                        </li>
-                        <li>
-                            <a href="#image-sources" class="flex items-center p-3 rounded-lg hover:bg-secondary transition-colors">
-                                <i class="fa fa-picture-o mr-3"></i>
-                                <span>图片源管理</span>
-                            </a>
-                        </li>
-                        <li>
-                            <a href="#announcement-management" class="flex items-center p-3 rounded-lg hover:bg-secondary transition-colors">
-                                <i class="fa fa-bullhorn mr-3"></i>
-                                <span>公告管理</span>
-                            </a>
-                        </li>
-                        <li>
-                            <a href="#search-engine-management" class="flex items-center p-3 rounded-lg hover:bg-secondary transition-colors">
-                                <i class="fa fa-search mr-3"></i>
-                                <span>搜索引擎管理</span>
-                            </a>
-                        </li>
-                        <li>
-                            <a href="#website-settings" class="flex items-center p-3 rounded-lg hover:bg-secondary transition-colors">
-                                <i class="fa fa-cog mr-3"></i>
-                                <span>网站设置</span>
-                            </a>
-                        </li>
-                    </ul>
-                </div>
-            </aside>
-
-            <!-- 右侧内容 -->
+    <!-- 主体内容：顶部标签页为唯一导航，不再保留重复的左侧菜单 -->
+    <main class="container mx-auto px-6 py-8 admin-main">
             <section class="flex-1">
                 <!-- 页面头：面包屑 + 标题 + 说明 -->
                 <div class="admin-pagehead">
@@ -749,7 +674,6 @@
                     </div>
                 </div>
             </section>
-        </div>
     </main>
 
     <!-- 底部 -->
@@ -786,7 +710,7 @@
     <!-- 引入管理后台JS -->
     <script src="js/admin.js"></script>
     <!-- 控制台布局：标签页 / 页面标题联动（纯展示层，须在 admin.js 之后） -->
-    <script src="js/admin-layout.js?v=20261107g"></script>
+    <script src="js/admin-layout.js?v=20261107h"></script>
     
     <!-- 搜索引擎表单 -->
     <div id="search-engine-form" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">

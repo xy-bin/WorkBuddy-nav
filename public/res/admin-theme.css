@@ -1,7 +1,7 @@
 /* ============================================================
    admin-theme.css — 管理后台「控制台」视觉主题
    源文件: static-nav/res/  →  pages/scripts/build.mjs 复制到 public/res/
-   参照 iLinks 控制台：干净浅底 + 清爽绿主色 + 窄侧栏 + 横向标签页。
+   参照 iLinks 控制台：干净浅底 + 清爽绿主色 + 顶部标签页单一导航。
    纯 CSS 覆盖，不改动任何 ID、面板显隐与业务逻辑。
    仅作用于 body.page-admin，变量重定义不会影响首页 / 登录页。
    ============================================================ */
@@ -168,14 +168,11 @@ body.page-admin .admin-tool-link:hover {
     color: var(--nv-primary) !important;
 }
 
-body.page-admin #admin-mobile-menu-btn {
-    border-radius: 10px !important;
-    border: 1px solid var(--nv-line);
-    background: var(--nv-card) !important;
-    box-shadow: var(--nv-shadow);
+/* ---------------- 页面头 + 顶部标签页（唯一导航） ---------------- */
+body.page-admin .admin-main {
+    max-width: 1360px;
 }
 
-/* ---------------- 页面头 + 横向标签页 ---------------- */
 body.page-admin .admin-pagehead {
     padding: 2px 2px 14px;
     border-bottom: 1px solid var(--nv-line);
@@ -207,14 +204,22 @@ body.page-admin .admin-pagehead p {
 }
 
 body.page-admin .admin-tabs {
+    position: relative;
     display: flex;
     align-items: stretch;
-    gap: 2px;
+    gap: 3px;
     overflow-x: auto;
     scrollbar-width: thin;
     border-bottom: 1px solid var(--nv-line);
     margin: 0 0 18px;
+    padding: 8px 0 0;
     -webkit-overflow-scrolling: touch;
+}
+
+body.page-admin .admin-tabs::-webkit-scrollbar { height: 4px; }
+body.page-admin .admin-tabs::-webkit-scrollbar-thumb {
+    background: rgba(14, 155, 116, .22);
+    border-radius: 4px;
 }
 
 body.page-admin .admin-tabs a {
@@ -223,7 +228,8 @@ body.page-admin .admin-tabs a {
     align-items: center;
     gap: 5px;
     flex: 0 0 auto;
-    padding: 11px 13px;
+    padding: 11px 15px;
+    border-radius: 9px 9px 0 0;
     font-size: 12.5px;
     color: var(--nv-sub);
     white-space: nowrap;
@@ -238,6 +244,7 @@ body.page-admin .admin-tabs a:hover {
 body.page-admin .admin-tabs a.is-active {
     color: var(--nv-primary);
     font-weight: 700;
+    background: var(--nv-primary-soft);
 }
 
 body.page-admin .admin-tabs a.is-active::after {
@@ -267,78 +274,11 @@ body.page-admin .admin-tab-badge.hot {
     color: #e08a20;
 }
 
-/* ---------------- 左侧菜单 ---------------- */
-body.page-admin main.container { padding-top: 22px !important; }
-body.page-admin main.container > div { gap: 20px !important; }
-body.page-admin main.container > div > aside { width: 186px; flex: 0 0 186px; }
-
-body.page-admin #admin-sidebar {
-    background: var(--nv-card) !important;
-    border: 1px solid var(--nv-line);
-    border-radius: 12px !important;
-    box-shadow: var(--nv-shadow) !important;
-    padding: 8px !important;
-    top: 78px !important;
-}
-
-body.page-admin .admin-nav-group {
-    padding: 14px 12px 5px;
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 1px;
-    color: #9aa9a4;
-}
-
-body.page-admin .admin-nav-group:first-child { padding-top: 6px; }
-
-body.page-admin #admin-sidebar ul > li > a {
-    position: relative;
-    border-radius: 8px !important;
-    padding: 9px 12px !important;
-    color: var(--nv-sub) !important;
-    font-size: 12.5px;
-    font-weight: 550;
-    transition: background .18s ease, color .18s ease;
-}
-
-body.page-admin #admin-sidebar ul > li > a:hover {
-    background: var(--nv-primary-soft) !important;
-    color: var(--nv-primary) !important;
-}
-
-body.page-admin #admin-sidebar ul > li > a.bg-primary,
-body.page-admin #admin-sidebar ul > li > a.text-white {
-    background: var(--nv-primary-soft) !important;
-    color: var(--nv-primary) !important;
-    font-weight: 700;
-    box-shadow: none !important;
-}
-
-body.page-admin #admin-sidebar ul > li > a.bg-primary::before,
-body.page-admin #admin-sidebar ul > li > a.text-white::before {
-    content: "";
-    position: absolute;
-    left: 0;
-    top: 18%;
-    bottom: 18%;
-    width: 3px;
-    border-radius: 0 3px 3px 0;
-    background: var(--nv-primary);
-}
-
-body.page-admin #admin-sidebar ul > li > a i {
-    width: 17px;
-    text-align: center;
-    margin-right: 10px !important;
-    font-size: 13px;
-}
-
 /* ---------------- 内容面板 ---------------- */
-/* flex 子项默认 min-width:auto，宽表格会把整行撑出视口，
-   导致用户横向滚动后左侧菜单被裁掉。收缩到 0 让表格自己在
-   .overflow-x-auto 容器内滚动，同时保证侧栏不被压缩。 */
-body.page-admin main.container > div > aside { flex-shrink: 0; }
-body.page-admin section.flex-1 { min-width: 0; max-width: 100%; }
+/* 单栏布局：宽表格只在 .overflow-x-auto 容器内横向滚动，
+   不会把整个页面撑出视口。 */
+body.page-admin main.container { padding-top: 22px !important; }
+body.page-admin section.flex-1 { width: 100%; min-width: 0; max-width: 100%; }
 
 body.page-admin section.flex-1 > div[id][class*="rounded-xl"] {
     background: var(--nv-card) !important;
@@ -567,37 +507,16 @@ body.page-admin > footer {
 
 @media (max-width: 1023px) {
     body.page-admin main.container { padding: 16px 12px !important; }
-    body.page-admin main.container > div { gap: 14px !important; }
-    body.page-admin main.container > div > aside { width: 100%; flex: 0 0 100%; }
-    body.page-admin > div.md\:hidden { display: none !important; }
-    /* 手机上侧栏已是横滑标签条，隐藏重复的模块标签页 */
-    body.page-admin .admin-tabs { display: none !important; }
-    body.page-admin #admin-sidebar {
-        display: block !important;
-        position: static !important;
-        padding: 8px !important;
-        border-radius: 12px !important;
+    body.page-admin .admin-pagehead { padding-bottom: 10px; }
+    /* 顶部标签页是唯一导航，手机端常显并横向滚动 */
+    body.page-admin .admin-tabs {
+        margin-bottom: 14px;
+        padding-top: 4px;
     }
-    body.page-admin #admin-sidebar > ul {
-        display: flex !important;
-        gap: 8px !important;
-        overflow-x: auto !important;
-        padding-bottom: 2px !important;
-        -webkit-overflow-scrolling: touch;
-        scrollbar-width: thin;
+    body.page-admin .admin-tabs a {
+        padding: 9px 12px;
+        font-size: 12px;
     }
-    body.page-admin #admin-sidebar > ul > li { flex: 0 0 auto !important; }
-    body.page-admin #admin-sidebar > ul > li + li { margin-top: 0 !important; }
-    body.page-admin .admin-nav-group { display: none !important; }
-    body.page-admin #admin-sidebar > ul > li > a {
-        white-space: nowrap !important;
-        padding: 9px 13px !important;
-        font-size: 12.5px !important;
-    }
-    body.page-admin #admin-sidebar > ul > li > a.bg-primary::before,
-    body.page-admin #admin-sidebar > ul > li > a.text-white::before { display: none; }
-    body.page-admin #admin-sidebar > ul > li > a > i { margin-right: 7px !important; }
-    body.page-admin section.flex-1 { min-width: 0; max-width: 100%; }
     body.page-admin table { min-width: 560px; }
     body.page-admin .overflow-x-auto { -webkit-overflow-scrolling: touch; }
 }

@@ -1,8 +1,9 @@
 /* ============================================================
    admin-layout.js — 控制台布局联动（纯展示层）
-   只负责：页面头标题/说明、横向标签页高亮、与左侧菜单同步。
-   面板显隐仍由 admin.js 的 bindNavigationEvents() 负责，
-   本文件通过触发对应菜单链接的 click 复用原逻辑，不重复实现。
+   只负责：页面头标题/说明、顶部标签页高亮、滚动定位。
+   面板显隐与功能初始化仍由 admin.js 的 bindNavigationEvents() 负责，
+   它对同一个 #admin-tabs a 直接绑定了 click，本文件用事件委托随后执行。
+   左侧菜单已移除，顶部标签页是唯一导航入口。
    ============================================================ */
 (function ($) {
     'use strict';
@@ -30,7 +31,19 @@
         $('#admin-crumb-current').text(meta[0]);
         $('#admin-page-desc').text(meta[1]);
 
-        // 从标签条切换时，左侧菜单也要同步高亮
+        // 窄屏标签条横滑时，把当前项滚到可见区域中间
+        var bar = document.getElementById('admin-tabs');
+        var tab = bar && bar.querySelector('a.is-active');
+        if (bar && tab && bar.scrollWidth > bar.clientWidth) {
+            var left = tab.offsetLeft - (bar.clientWidth - tab.offsetWidth) / 2;
+            if (typeof bar.scrollTo === 'function') {
+                bar.scrollTo({ left: Math.max(0, left), behavior: 'smooth' });
+            } else {
+                bar.scrollLeft = Math.max(0, left);
+            }
+        }
+
+        // 兼容仍旧带左侧菜单的旧版页面（若存在则同步高亮）
         var link = $('#admin-sidebar a[href="#' + id + '"]');
         if (link.length && !link.hasClass('bg-primary')) {
             $('#admin-sidebar a').removeClass('bg-primary text-white');
@@ -38,29 +51,31 @@
         }
     }
 
+    function scrollToHead() {
+        var head = document.querySelector('.admin-pagehead');
+        if (head && head.scrollIntoView) {
+            head.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }
+
     $(function () {
         if (!$('#admin-tabs').length) return;
 
+        // admin.js 的直接绑定先执行（完成面板切换），这里再更新标题与高亮
         $('#admin-tabs').on('click', 'a', function (e) {
             e.preventDefault();
             var id = (this.getAttribute('href') || '').slice(1);
             if (!META[id]) return;
-
-            // 复用 admin.js 里已有的面板切换与初始化逻辑
-            $('#admin-sidebar a[href="#' + id + '"]').trigger('click');
             activate(id);
-
-            var head = document.querySelector('.admin-pagehead');
-            if (head && head.scrollIntoView) {
-                head.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }
+            scrollToHead();
         });
 
-        // 事件委托：admin.js 的直接绑定先执行，这里读取切换后的状态
-        $(document).on('click', '#admin-sidebar a', function () {
-            activate((this.getAttribute('href') || '').slice(1));
-        });
-
-        activate('dashboard');
+        // 支持直接用 #link-management 之类的锚点进入对应模块
+        var initial = (window.location.hash || '').slice(1);
+        if (META[initial]) {
+            $('#admin-tabs a[href="#' + initial + '"]').trigger('click');
+        } else {
+            activate('dashboard');
+        }
     });
 })(window.jQuery);

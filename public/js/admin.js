@@ -1966,8 +1966,9 @@ function initEventListeners() {
 }
 
 
-// 初始化移动端菜单
+// 初始化移动端菜单（新版控制台已移除左侧菜单，仅在旧版 DOM 存在时启用）
 function initAdminMobileMenu() {
+    if (!$("#admin-mobile-menu-btn").length) return;
     $("#admin-mobile-menu-btn").on("click", function() {
         $("#admin-sidebar").toggleClass("hidden");
     });
@@ -1975,11 +1976,19 @@ function initAdminMobileMenu() {
 
 
 // 绑定导航菜单事件
+// 新版控制台用顶部标签页（#admin-tabs），旧版 Node/Workers 仍用左侧菜单（#admin-sidebar），
+// 两者共用同一套面板显隐与初始化逻辑，避免重复实现。
 function bindNavigationEvents() {
-    $("#admin-sidebar a").on("click", function(e) {
+    $("#admin-tabs a, #admin-sidebar a").on("click", function(e) {
         e.preventDefault();
+
+        $("#admin-tabs a").removeClass("is-active");
         $("#admin-sidebar a").removeClass("bg-primary text-white");
-        $(this).addClass("bg-primary text-white");
+        if ($(this).closest("#admin-tabs").length) {
+            $(this).addClass("is-active");
+        } else {
+            $(this).addClass("bg-primary text-white");
+        }
         
         // 隐藏所有内容区域
         $("#dashboard, #category-management, #link-management, #pending-bookmarks, #theme-settings, #image-sources, #announcement-management, #search-engine-management, #website-settings").addClass("hidden");
