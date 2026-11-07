@@ -24,6 +24,8 @@ body.page-admin {
     color: var(--nv-ink);
     background: var(--nv-bg) !important;
     -webkit-font-smoothing: antialiased;
+    /* 顶栏改为 fixed 后脱离文档流，这里补回等高占位，避免内容被压到顶栏下方 */
+    padding-top: var(--admin-top-h, 63px) !important;
 }
 
 body.dark.page-admin {
@@ -41,8 +43,12 @@ body.dark.page-admin {
 
 /* ---------------- 顶部栏 ---------------- */
 body.page-admin > header {
-    position: sticky;
+    /* fixed 而非 sticky：滚动时顶栏绝对不动，也不会出现 backdrop-filter
+       与 sticky 组合在真实滚轮滚动下的亚像素抖动 */
+    position: fixed;
     top: 0;
+    left: 0;
+    right: 0;
     z-index: 40;
     padding: 9px 22px !important;
     background: var(--nv-glass) !important;
@@ -182,7 +188,8 @@ body.page-admin .admin-sticky {
     z-index: 30;
     background: var(--nv-bg);
     padding: 2px 0 18px;
-    box-shadow: 0 12px 18px -18px rgba(18, 56, 45, .55);
+    /* 明确的下边界，避免内容从固定区下方滚过时看起来像被「切掉」 */
+    box-shadow: 0 10px 18px -12px rgba(18, 56, 45, .38);
 }
 
 body.page-admin .admin-pagehead {
@@ -286,7 +293,10 @@ body.page-admin .admin-tab-badge.hot {
 /* ---------------- 内容面板 ---------------- */
 /* 单栏布局：宽表格只在 .overflow-x-auto 容器内横向滚动，
    不会把整个页面撑出视口。 */
-body.page-admin main.container { padding-top: 22px !important; }
+/* 关键：吸附区在文档流中的初始位置必须正好等于它的 sticky top 值。
+   若这里留 22px 上边距，滚动的前 22px 页面头会先往上滑一小段才粘住，
+   视觉上就是「顶部上滑一部分」。间距改由 body 的 padding-top 统一提供。 */
+body.page-admin main.container { padding-top: 0 !important; }
 body.page-admin section.flex-1 { width: 100%; min-width: 0; max-width: 100%; }
 
 body.page-admin section.flex-1 > div[id][class*="rounded-xl"] {
@@ -592,7 +602,7 @@ body.page-admin > footer {
 }
 
 @media (max-width: 1023px) {
-    body.page-admin main.container { padding: 16px 12px !important; }
+    body.page-admin main.container { padding: 0 12px 16px !important; }
     /* 固定区在窄屏压缩高度：隐藏面包屑与说明，只留标题 + 标签 */
     body.page-admin .admin-sticky { padding-bottom: 12px; }
     body.page-admin .admin-pagehead { padding-bottom: 8px; }
