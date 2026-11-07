@@ -363,12 +363,103 @@ function bindCategoryActions() {
 }
 
 
-// 加载书签列表
-function loadBookmarks(categoryId = null) {
-    let url = "/api/bookmarks";
-    if (categoryId) {
-        url = "/api/categories/" + categoryId + "/links";
+// ------------------------
+// 书签列表：搜索 + 分页
+// 接口仍返回全量数据，过滤与切片都在前端完成，不改变任何公开 API。
+// ------------------------
+const bookmarkView = { all: [], page: 1, pageSize: 20, keyword: '', categoryId: null };
+
+function bookmarkPageSize(total) {
+    // pageSize = 0 表示「全部」，此时只有一页，拖拽排序可以恢复
+    return bookmarkView.pageSize > 0 ? bookmarkView.pageSize : Math.max(1, total);
+}
+
+function bookmarkRowHtml(b) {
+    return "<tr data-id=\"" + esc(b.bookmark_id) + "\" class=\"hover:bg-gray-50 transition-colors duration-150\">" +
+        "<td class=\"py-3 px-4 text-center bg-gray-50 hover:bg-gray-100\"><i class=\"drag-handle fa fa-bars cursor-move text-gray-400 hover:text-gray-600 transition-colors duration-150\"></i></td>" +
+        "<td class=\"py-3 px-4 text-gray-500 font-mono text-sm\" width=\"80\">" + esc(b.bookmark_id) + "</td>" +
+        "<td class=\"py-3 px-4 font-medium\" width=\"200\"><div class=\"lk-name\"><i class=\"" + esc(b.bookmark_icon) + " text-xl text-gray-700 mr-2\"></i>" + esc(b.bookmark_name) + "</div>" +
+        (b.category_name ? "<small class=\"lk-cat\">" + esc(b.category_name) + "</small>" : "") + "</td>" +
+        "<td class=\"py-3 px-4 truncate flex-1\"><a href=\"" + safeHref(b.bookmark_url) + "\" target=\"_blank\" rel=\"noopener noreferrer\" title=\"" + esc(b.bookmark_url) + "\" class=\"text-blue-600 hover:text-blue-800 transition-colors duration-150\">" + esc(truncateUrl(b.bookmark_url, 30)) + "</a></td>" +
+        "<td class=\"py-3 px-4 text-right\"><button type=\"button\" class=\"edit-link-btn bg-primary text-white px-3 py-1 rounded-lg mr-2 hover:bg-primary/90 transition-colors duration-150\" data-id=\"" + esc(b.bookmark_id) + "\">编辑</button><button type=\"button\" class=\"delete-link-btn bg-red-500 text-white px-3 py-1 rounded-lg hover:bg-red-600 transition-colors duration-150\" data-id=\"" + esc(b.bookmark_id) + "\">删除</button></td></tr>";
+}
+
+function renderBookmarks() {
+    const v = bookmarkView;
+    const kw = v.keyword.trim().toLowerCase();
+    const source = Array.isArray(v.all) ? v.all : [];
+    // 名称 / 网址 / 描述 / 分类 / ID 都可搜
+    const list = kw
+        ? source.filter(b => [b.bookmark_name, b.bookmark_url, b.bookmark_description, b.category_name, b.bookmark_id]
+            .join(" ").toLowerCase().indexOf(kw) !== -1)
+        : source.slice();
+
+    const total = list.length;
+    const size = bookmarkPageSize(total);
+    const totalPages = Math.max(1, Math.ceil(total / size));
+    v.page = Math.min(Math.max(1, v.page), totalPages);
+    const pageItems = list.slice((v.page - 1) * size, (v.page - 1) * size + size);
+
+    if (pageItems.length) {
+        $("#link-list").empty().append(pageItems.map(bookmarkRowHtml).join(""));
+    } else if (kw) {
+        $("#link-list").html('<tr class="lk-empty-row"><td colspan="5"><i class="fa fa-search"></i>没有找到与「' + esc(kw) + '」匹配的书签<br><span style="font-size:11px">可换个关键词，或清空搜索 / 切换分类</span></td></tr>');
+    } else {
+        $("#link-list").html('<tr class="lk-empty-row"><td colspan="5"><i class="fa fa-inbox"></i>该分类下暂时没有书签</td></tr>');
     }
+
+    renderBookmarkPager(total, totalPages, size, pageItems.length);
+    syncBookmarkSortable(totalPages, kw, !!v.categoryId);
+    bindBookmarkActions();
+}
+
+function renderBookmarkPager(total, totalPages, size, shown) {
+    const v = bookmarkView;
+    const from = total ? (v.page - 1) * size + 1 : 0;
+    const to = total ? Math.min(total, from + shown - 1) : 0;
+    $("#link-page-info").html(total
+        ? "共 <b>" + total + "</b> 条 · 显示 " + from + "–" + to + " · 第 <b>" + v.page + "/" + totalPages + "</b> 页"
+        : "共 <b>0</b> 条书签");
+
+    // 首页、末页、当前页 ±2，其余用省略号，页数很多时也不会撑爆工具栏
+    const pages = [];
+    const add = p => { if (p >= 1 && p <= totalPages && pages.indexOf(p) === -1) pages.push(p); };
+    add(1);
+    add(totalPages);
+    for (let p = v.page - 2; p <= v.page + 2; p++) add(p);
+    pages.sort((a, b) => a - b);
+
+    let html = '<button type="button" class="lk-page-btn" data-page="' + (v.page - 1) + '"' + (v.page <= 1 ? " disabled" : "") + ' aria-label="上一页"><span class="lk-arrow">‹</span></button>';
+    let prev = 0;
+    pages.forEach(p => {
+        if (prev && p - prev > 1) html += '<span class="lk-page-ellipsis">…</span>';
+        html += '<button type="button" class="lk-page-btn' + (p === v.page ? " is-active" : "") + '" data-page="' + p + '">' + p + '</button>';
+        prev = p;
+    });
+    html += '<button type="button" class="lk-page-btn" data-page="' + (v.page + 1) + '"' + (v.page >= totalPages ? " disabled" : "") + ' aria-label="下一页"><span class="lk-arrow">›</span></button>';
+    $("#link-page-buttons").html(html);
+}
+
+function syncBookmarkSortable(totalPages, kw, hasCategory) {
+    // sortable 的 update 用当前 DOM 行下标写 sort 值；分页 / 搜索 / 分类筛选时
+    // 只提交局部行会覆盖其它页的排序，因此这些视图下一律暂停拖拽。
+    const fullView = !kw && !hasCategory && totalPages <= 1;
+    const $list = $("#link-list");
+    try {
+        if ($list.hasClass("ui-sortable")) $list.sortable(fullView ? "enable" : "disable");
+    } catch (e) { /* jQuery UI 未加载时忽略 */ }
+    $list.toggleClass("lk-sort-off", !fullView);
+    $("#link-page-hint").text(fullView ? "" : "当前为分页 / 搜索 / 分类筛选视图，已暂停拖拽排序；每页选「全部」并清空条件即可恢复。");
+}
+
+// 加载书签列表
+function loadBookmarks(categoryId) {
+    // 无参调用（保存 / 删除后刷新）沿用当前分类筛选，不会跳回「全部分类」
+    if (categoryId === undefined) categoryId = bookmarkView.categoryId;
+    const nextCategory = categoryId || null;
+    if (nextCategory !== bookmarkView.categoryId) bookmarkView.page = 1;
+    bookmarkView.categoryId = nextCategory;
+    const url = nextCategory ? "/api/categories/" + nextCategory + "/links" : "/api/bookmarks";
     
     $.ajax({
         url: url,
@@ -403,12 +494,8 @@ function loadBookmarks(categoryId = null) {
                 sort: b.sort != null ? b.sort : 0
             }));
 
-            $("#link-list").empty();
-            bookmarks.forEach(bookmark => {
-                const row = "<tr data-id=\"" + esc(bookmark.bookmark_id) + "\" class=\"hover:bg-gray-50 transition-colors duration-150\"><td class=\"py-3 px-4 text-center bg-gray-50 hover:bg-gray-100\"><i class=\"drag-handle fa fa-bars cursor-move text-gray-400 hover:text-gray-600 transition-colors duration-150\"></i></td><td class=\"py-3 px-4 text-gray-500 font-mono text-sm\" width=\"80\">" + esc(bookmark.bookmark_id) + "</td><td class=\"py-3 px-4 font-medium\" width=\"200\"><i class=\"" + esc(bookmark.bookmark_icon) + " text-xl text-gray-700 mr-2\"></i>" + esc(bookmark.bookmark_name) + "</td><td class=\"py-3 px-4 truncate flex-1\"><a href=\"" + safeHref(bookmark.bookmark_url) + "\" target=\"_blank\" title=\"" + safeHref(bookmark.bookmark_url) + "\" class=\"text-blue-600 hover:text-blue-800 transition-colors duration-150\">" + esc(truncateUrl(bookmark.bookmark_url, 30)) + "</a></td><td class=\"py-3 px-4 text-right\"><button type=\"button\" class=\"edit-link-btn bg-primary text-white px-3 py-1 rounded-lg mr-2 hover:bg-primary/90 transition-colors duration-150\" data-id=\"" + esc(bookmark.bookmark_id) + "\">编辑</button><button type=\"button\" class=\"delete-link-btn bg-red-500 text-white px-3 py-1 rounded-lg hover:bg-red-600 transition-colors duration-150\" data-id=\"" + esc(bookmark.bookmark_id) + "\">删除</button></td></tr>";
-                $("#link-list").append(row);
-            });
-            bindBookmarkActions();
+            bookmarkView.all = bookmarks;
+            renderBookmarks();
         },
         error: function(xhr) {
             let errorMsg = "加载书签失败";
@@ -509,7 +596,37 @@ function initSortable() {
 function initEventListeners() {
     // 初始化拖拽排序
     initSortable();
-    
+
+    // 书签搜索（防抖）/ 每页条数 / 翻页
+    let linkSearchTimer = null;
+    $("#link-search").on("input", function() {
+        const val = $(this).val();
+        $("#link-search-clear").toggleClass("hidden", !val);
+        clearTimeout(linkSearchTimer);
+        linkSearchTimer = setTimeout(function() {
+            bookmarkView.keyword = val;
+            bookmarkView.page = 1;
+            renderBookmarks();
+        }, 180);
+    });
+    $("#link-search-clear").on("click", function() {
+        clearTimeout(linkSearchTimer);
+        $("#link-search").val("").trigger("input");
+        $("#link-search").focus();
+    });
+    $("#link-page-size").on("change", function() {
+        const size = Number($(this).val());
+        bookmarkView.pageSize = isNaN(size) || size < 0 ? 20 : size;
+        bookmarkView.page = 1;
+        renderBookmarks();
+    });
+    $(document).on("click", "#link-page-buttons .lk-page-btn", function() {
+        const page = Number($(this).data("page"));
+        if (!page || page < 1 || page === bookmarkView.page || $(this).prop("disabled")) return;
+        bookmarkView.page = page;
+        renderBookmarks();
+    });
+
     // 一键添加书签功能
     generateBookmarklet();
     $('#copy-bookmarklet').on('click', copyBookmarklet);
