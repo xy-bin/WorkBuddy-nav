@@ -1074,21 +1074,41 @@ function initEventListeners() {
         $("#search-engine-url").val("");
         $("#search-engine-sort").val(0);
         $("#search-engine-id").val("");
+        $("#search-engine-is-active").prop("checked", true);
         editingSearchEngineId = null;
     });
+
+    // 卡片开关：先更新界面，再合并 400ms 内的多次点击一次性保存
+    $(document).on("change", "#search-engine-list .se-toggle", function() {
+        queueSearchEngineState(String($(this).data("id")), this.checked ? 1 : 0);
+    });
+
+    // 全部开启 / 全部关闭（一次请求完成，避免并发写 KV）
+    $("#search-engine-enable-all").on("click", function() {
+        setAllSearchEngines(1);
+    });
+    $("#search-engine-disable-all").on("click", function() {
+        if (confirm("停用全部搜索引擎后，首页搜索框将没有可用引擎，确定继续吗？")) {
+            setAllSearchEngines(0);
+        }
+    });
     
-    // 搜索搜索引擎按钮点击
+    // 搜索过滤（按名称 / 标识匹配卡片）
     $("#search-engine-search").on("input", function() {
-        const searchTerm = $(this).val().toLowerCase();
-        $("#search-engine-list tr").each(function() {
-            const engineName = $(this).find("td:nth-child(2)").text().toLowerCase();
-            const engineKey = $(this).find("td:nth-child(3)").text().toLowerCase();
-            if (engineName.includes(searchTerm) || engineKey.includes(searchTerm)) {
-                $(this).show();
-            } else {
-                $(this).hide();
-            }
+        const searchTerm = $(this).val().toLowerCase().trim();
+        let visible = 0;
+        $("#search-engine-list .se-card").each(function() {
+            const $card = $(this);
+            const text = (String($card.data("name") || "") + " " + String($card.data("key") || "")).toLowerCase();
+            const hit = !searchTerm || text.includes(searchTerm);
+            $card.toggleClass("is-filtered", !hit);
+            if (hit) visible++;
         });
+        const $list = $("#search-engine-list");
+        $list.find(".se-filter-empty").remove();
+        if (searchTerm && visible === 0) {
+            $list.append('<div class="se-empty se-filter-empty">没有匹配的搜索引擎</div>');
+        }
     });
     
     // 清空所有数据按钮 - 重新实现，确保先确认后执行
@@ -2150,12 +2170,21 @@ function bindAnnouncementActions() {
 
 
 // ------------------------
-// 搜索引擎管理功能
+// 搜索引擎管理功能：卡片网格 + 逐个启停
 // ------------------------
 
 // 初始化搜索引擎管理
 function initSearchEngineManagement() {
     loadSearchEngines();
+}
+
+// 卡片副标题只显示域名，避免长 URL 撑破网格
+function seHost(url) {
+    try {
+        return new URL(String(url)).hostname.replace(/^www\./, '');
+    } catch (e) {
+        return String(url || '').slice(0, 24);
+    }
 }
 
 // 加载搜索引擎列表
@@ -2164,31 +2193,142 @@ function loadSearchEngines() {
         url: "/api/search-engines",
         method: "GET",
         success: function(response) {
-            $("#search-engine-list").empty();
-            if (response.success && response.data && response.data.search_engines) {
-                response.data.search_engines.forEach(engine => {
-                    const row = `<tr><td class="py-3 px-4">${esc(engine.search_engine_id)}</td><td class="py-3 px-4">${esc(engine.engine_name)}</td><td class="py-3 px-4">${esc(engine.engine_key)}</td><td class="py-3 px-4 truncate"><a href="${safeHref(engine.engine_url)}" target="_blank" title="${safeHref(engine.engine_url)}">${esc(truncateUrl(engine.engine_url, 50))}</a></td><td class="py-3 px-4">${esc(engine.sort)}</td><td class="py-3 px-4 text-right"><button type="button" class="edit-search-engine-btn bg-primary text-white px-3 py-1 rounded-lg mr-2" data-id="${esc(engine.search_engine_id)}">编辑</button><button type="button" class="delete-search-engine-btn bg-red-500 text-white px-3 py-1 rounded-lg" data-id="${esc(engine.search_engine_id)}">删除</button></td></tr>`;
-                    $("#search-engine-list").append(row);
-                });
-            } else {
-                // 如果没有数据，显示空状态
-                const emptyRow = `<tr><td colspan="6" class="py-4 text-center text-gray-500">暂无搜索引擎数据</td></tr>`;
-                $("#search-engine-list").append(emptyRow);
+            const $list = $("#search-engine-list").empty();
+            const engines = response && response.success && response.data && Array.isArray(response.data.search_engines)
+                ? response.data.search_engines.slice().sort((a, b) => (Number(a.sort) || 0) - (Number(b.sort) || 0))
+                : [];
+
+            if (!engines.length) {
+                $list.html('<div class="se-empty">暂无搜索引擎，点击右上角「新增」添加</div>');
+                updateSearchEngineCount();
+                return;
             }
+
+            $list.html(engines.map(function(engine) {
+                const id = esc(engine.search_engine_id);
+                const name = String(engine.engine_name || '').trim();
+                const key = String(engine.engine_key || '').trim();
+                const meta = key + ' · ' + seHost(engine.engine_url);
+                const active = Number(engine.is_active) !== 0; // 旧数据缺字段视为启用
+                const initial = (name.charAt(0) || '?').toUpperCase();
+                return `<div class="se-card${active ? '' : ' is-off'}" data-id="${id}" data-name="${esc(name.toLowerCase())}" data-key="${esc(key.toLowerCase())}">
+                    <span class="se-logo" aria-hidden="true">${esc(initial)}</span>
+                    <span class="se-meta">
+                        <b title="${esc(name)}">${esc(name)}</b>
+                        <small title="${esc(meta)}">${esc(meta)}</small>
+                    </span>
+                    <label class="se-toggle-wrap" title="${active ? '点击停用' : '点击启用'}">
+                        <input type="checkbox" class="se-toggle" data-id="${id}"${active ? ' checked' : ''} aria-label="${esc(name)}：${active ? '已启用' : '已停用'}">
+                    </label>
+                    <span class="se-ops">
+                        <button type="button" class="edit-search-engine-btn" data-id="${id}" aria-label="编辑 ${esc(name)}">编辑</button>
+                        <button type="button" class="delete-search-engine-btn" data-id="${id}" aria-label="删除 ${esc(name)}">删除</button>
+                    </span>
+                </div>`;
+            }).join(''));
+            updateSearchEngineCount();
         },
         error: function(xhr) {
             let errorMsg = "加载搜索引擎失败";
             try {
-                const response = JSON.parse(xhr.responseText);
-                errorMsg = response.message || errorMsg;
+                errorMsg = JSON.parse(xhr.responseText).message || errorMsg;
             } catch (e) {}
-            alert(errorMsg);
-            
-            // 显示错误状态
-            const errorRow = `<tr><td colspan="6" class="py-4 text-center text-red-500">加载搜索引擎失败：${esc(errorMsg)}</td></tr>`;
-            $("#search-engine-list").empty().append(errorRow);
+            $("#search-engine-list").html('<div class="se-empty">' + esc(errorMsg) + '</div>');
+            showSearchEngineTip(errorMsg, true);
         }
     });
+}
+
+// ---- 启停状态：多次开关点击合并为一次请求，规避 KV 同 key 每秒 1 次写限制 ----
+let searchEngineSaveTimer = null;
+let searchEnginePending = {};
+let searchEngineBefore = {};
+let searchEngineTipTimer = null;
+
+function updateSearchEngineCount() {
+    const $all = $("#search-engine-list .se-toggle");
+    $("#search-engine-active-count").text("已启用 " + $all.filter(":checked").length + " / " + $all.length);
+}
+
+function showSearchEngineTip(text, isError) {
+    const $tip = $("#search-engine-tip");
+    if (!$tip.length) return;
+    $tip.text(text).toggleClass("is-error", !!isError).addClass("is-visible");
+    clearTimeout(searchEngineTipTimer);
+    searchEngineTipTimer = setTimeout(function() { $tip.removeClass("is-visible"); }, 2600);
+}
+
+function searchEngineStatesFromDom() {
+    const out = {};
+    $("#search-engine-list .se-toggle").each(function() {
+        out[$(this).data("id")] = this.checked ? 1 : 0;
+    });
+    return out;
+}
+
+function applySearchEngineStates(states) {
+    Object.keys(states).forEach(function(id) {
+        const $toggle = $('#search-engine-list .se-toggle[data-id="' + id + '"]');
+        if (!$toggle.length) return;
+        const on = !!Number(states[id]);
+        $toggle.prop("checked", on);
+        $toggle.closest(".se-card").toggleClass("is-off", !on);
+    });
+    updateSearchEngineCount();
+}
+
+function saveSearchEngineStates(states, before, okText) {
+    $.ajax({
+        url: "/api/search-engines/active",
+        method: "PUT",
+        contentType: "application/json",
+        data: JSON.stringify({ states: states }),
+        success: function(response) {
+            if (response && response.success) {
+                showSearchEngineTip(okText || "已保存", false);
+            } else {
+                applySearchEngineStates(before);
+                showSearchEngineTip((response && response.message) || "保存失败，已恢复", true);
+            }
+        },
+        error: function(xhr) {
+            applySearchEngineStates(before);
+            let msg = "保存失败，已恢复";
+            try {
+                msg = (JSON.parse(xhr.responseText).message || "保存失败") + "，已恢复";
+            } catch (e) {}
+            showSearchEngineTip(msg, true);
+        }
+    });
+}
+
+function queueSearchEngineState(id, value) {
+    if (!(id in searchEngineBefore)) {
+        searchEngineBefore[id] = Number(value) ? 0 : 1; // change 后的反值即变更前状态
+    }
+    searchEnginePending[id] = Number(value);
+    const one = {}; one[id] = Number(value);
+    applySearchEngineStates(one);
+    clearTimeout(searchEngineSaveTimer);
+    searchEngineSaveTimer = setTimeout(function() {
+        const states = searchEnginePending;
+        const before = searchEngineBefore;
+        searchEnginePending = {};
+        searchEngineBefore = {};
+        saveSearchEngineStates(states, before);
+    }, 400);
+}
+
+function setAllSearchEngines(active) {
+    clearTimeout(searchEngineSaveTimer);
+    searchEnginePending = {};
+    searchEngineBefore = {};
+    const before = searchEngineStatesFromDom();
+    const states = {};
+    Object.keys(before).forEach(function(id) { states[id] = active; });
+    if (!Object.keys(states).length) return;
+    applySearchEngineStates(states);
+    saveSearchEngineStates(states, before, active ? "已全部开启" : "已全部关闭");
 }
 
 // 添加/编辑搜索引擎表单
@@ -2202,6 +2342,7 @@ function openAddSearchEngineForm() {
     $("#search-engine-key").val("");
     $("#search-engine-url").val("");
     $("#search-engine-sort").val(0);
+    $("#search-engine-is-active").prop("checked", true);
     $("#search-engine-form").removeClass("hidden");
 }
 
@@ -2219,6 +2360,7 @@ function openEditSearchEngineForm(id) {
                 $("#search-engine-key").val(engine.engine_key);
                 $("#search-engine-url").val(engine.engine_url);
                 $("#search-engine-sort").val(engine.sort);
+                $("#search-engine-is-active").prop("checked", Number(engine.is_active) !== 0);
                 $("#search-engine-form").removeClass("hidden");
             }
         },
@@ -2250,7 +2392,8 @@ function saveSearchEngine() {
         engine_name: engineName,
         engine_key: engineKey,
         engine_url: engineUrl,
-        sort: sort
+        sort: sort,
+        is_active: $("#search-engine-is-active").is(":checked") ? 1 : 0
     };
     
     const url = editingSearchEngineId ? "/api/search-engines/" + editingSearchEngineId : "/api/search-engines";

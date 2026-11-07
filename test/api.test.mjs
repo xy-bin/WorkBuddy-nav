@@ -323,9 +323,71 @@ await test('KV 未绑定时稳定返回明确提示，不出现 TypeError 或间
     }
 });
 
+await test('搜索引擎：种子与公开接口都带 is_active，默认全部启用', async () => {
+    const { res, data } = await api('GET', '/api/search-engines');
+    assert.equal(res.status, 200);
+    const list = data.data.search_engines;
+    assert.ok(list.length >= 5);
+    assert.ok(list.every(e => e.is_active === 1), '旧数据缺字段时也应归一化为启用');
+});
+
+await test('搜索引擎：批量启停需登录，匿名 401', async () => {
+    const { res } = await api('PUT', '/api/search-engines/active', { body: { active: 0 } });
+    assert.equal(res.status, 401);
+});
+
+await test('搜索引擎：全部停用后公开接口仍返回完整列表（后台可管理）', async () => {
+    const put = await api('PUT', '/api/search-engines/active', { cookie, body: { active: 0 } });
+    assert.equal(put.res.status, 200);
+    assert.ok(put.data.data.every(e => e.is_active === 0));
+    const { data } = await api('GET', '/api/search-engines');
+    assert.equal(data.data.search_engines.length, put.data.data.length);
+    assert.ok(data.data.search_engines.every(e => e.is_active === 0));
+});
+
+await test('搜索引擎：states 精确批量更新，未列出的引擎保持不变', async () => {
+    const first = await api('PUT', '/api/search-engines/active', { cookie, body: { states: { 1: 1, 2: 0 } } });
+    assert.equal(first.res.status, 200);
+    const byId = Object.fromEntries(first.data.data.map(e => [e.search_engine_id, e.is_active]));
+    assert.equal(byId[1], 1);
+    assert.equal(byId[2], 0);
+    assert.equal(byId[3], 0);
+    const { data } = await api('GET', '/api/search-engines');
+    const got = Object.fromEntries(data.data.search_engines.map(e => [e.search_engine_id, e.is_active]));
+    assert.equal(got[1], 1);
+    assert.equal(got[2], 0);
+});
+
+await test('搜索引擎：单条只改 is_active 时不清空名称与 URL', async () => {
+    const before = (await api('GET', '/api/search-engines')).data.data.search_engines.find(e => e.search_engine_id === 1);
+    const put = await api('PUT', '/api/search-engines/1', { cookie, body: { is_active: 0 } });
+    assert.equal(put.res.status, 200);
+    const after = (await api('GET', '/api/search-engines')).data.data.search_engines.find(e => e.search_engine_id === 1);
+    assert.equal(after.is_active, 0);
+    assert.equal(after.engine_name, before.engine_name);
+    assert.equal(after.engine_url, before.engine_url);
+    assert.equal(after.engine_key, before.engine_key);
+});
+
+await test('搜索引擎：非法参数被拒绝；新增引擎默认启用；最后恢复全部开启', async () => {
+    const bad = await api('PUT', '/api/search-engines/active', { cookie, body: {} });
+    assert.notEqual(bad.res.status, 200);
+    const added = await api('POST', '/api/search-engines', {
+        cookie, body: { engine_name: '测试引擎', engine_key: 'test-engine', engine_url: 'https://example.com/s?q=', sort: 99 }
+    });
+    assert.equal(added.res.status, 200);
+    assert.equal(added.data.data.is_active, 1);
+    const id = added.data.data.search_engine_id;
+    const removed = await api('DELETE', '/api/search-engines/' + id, { cookie });
+    assert.equal(removed.res.status, 200);
+    const all = await api('PUT', '/api/search-engines/active', { cookie, body: { active: 1 } });
+    assert.equal(all.res.status, 200);
+    assert.ok(all.data.data.every(e => e.is_active === 1));
+});
+
 await test('KV 写入次数受控：无 Alarm、无逐 PV 写盘', async () => {
     assert.ok(kv.writes > 0);
-    assert.ok(kv.writes < 40, '单次会话内 KV 写入不应失控，实际 ' + kv.writes);
+    assert.ok(kv.writes < 50, '单次会话内 KV 写入不应失控，实际 ' + kv.writes);
 });
 
 console.log('\n通过 ' + passed + ' 项，失败 ' + failed + ' 项；KV 写入 ' + kv.writes + ' 次');

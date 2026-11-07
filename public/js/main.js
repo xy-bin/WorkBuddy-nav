@@ -606,26 +606,40 @@ $(document).ready(function() {
     function initSearchFunction() {
         // 搜索引擎映射（将从API动态加载）
         let searchEngines = {};
-        
+
+        // 接口不可用时的兜底引擎；后台停用全部引擎时不使用，尊重管理员设置
+        const fallbackEngines = [
+            { engine_name: '百度搜索', engine_key: 'baidu', engine_url: 'https://www.baidu.com/s?wd=' },
+            { engine_name: '谷歌搜索', engine_key: 'google', engine_url: 'https://www.google.com/search?q=' },
+            { engine_name: '必应搜索', engine_key: 'bing', engine_url: 'https://www.bing.com/search?q=' },
+            { engine_name: '360搜索', engine_key: 'so', engine_url: 'https://www.so.com/s?q=' }
+        ];
+
         // 从API加载搜索引擎数据
         function loadSearchEngines() {
             $.getJSON("/api/search-engines", function(data) {
                 // 清空搜索引擎选择器
-                $("#search-engine").empty();
-                
+                $("#search-engine").empty().prop("disabled", false);
+
                 // 清空搜索引擎映射
                 searchEngines = {};
-                
-                // 添加默认搜索引擎（如果API返回空数据）
-                const defaultEngines = [
-                    { engine_name: '百度搜索', engine_key: 'baidu', engine_url: 'https://www.baidu.com/s?wd=', sort: 1 },
-                    { engine_name: '谷歌搜索', engine_key: 'google', engine_url: 'https://www.google.com/search?q=', sort: 2 },
-                    { engine_name: '必应搜索', engine_key: 'bing', engine_url: 'https://www.bing.com/search?q=', sort: 3 },
-                    { engine_name: '360搜索', engine_key: 'so', engine_url: 'https://www.so.com/s?q=', sort: 4 }
-                ];
-                
-                const enginesToUse = data.success && data.data && data.data.search_engines && data.data.search_engines.length > 0 ? data.data.search_engines : defaultEngines;
-                
+
+                const engines = data && data.success && data.data && Array.isArray(data.data.search_engines)
+                    ? data.data.search_engines
+                    : null;
+
+                // 只展示后台启用的引擎；is_active 缺失（旧数据）视为启用
+                const enginesToUse = engines
+                    ? engines.filter(engine => engine && engine.engine_key && Number(engine.is_active) !== 0)
+                    : fallbackEngines;
+
+                if (enginesToUse.length === 0) {
+                    $("#search-engine")
+                        .append('<option value="">暂无可用搜索引擎</option>')
+                        .prop("disabled", true);
+                    return;
+                }
+
                 // 填充搜索引擎选择器并更新映射
                 enginesToUse.forEach(engine => {
                     $("#search-engine").append(`<option value="${escapeHtml(engine.engine_key)}">${escapeHtml(engine.engine_name)}</option>`);
@@ -635,21 +649,13 @@ $(document).ready(function() {
                 console.error("获取搜索引擎数据失败：", error);
                 
                 // 清空搜索引擎选择器
-                $("#search-engine").empty();
+                $("#search-engine").empty().prop("disabled", false);
                 
                 // 清空搜索引擎映射
                 searchEngines = {};
                 
-                // 加载失败时使用默认搜索引擎
-                const defaultEngines = [
-                    { engine_name: '百度搜索', engine_key: 'baidu', engine_url: 'https://www.baidu.com/s?wd=' },
-                    { engine_name: '谷歌搜索', engine_key: 'google', engine_url: 'https://www.google.com/search?q=' },
-                    { engine_name: '必应搜索', engine_key: 'bing', engine_url: 'https://www.bing.com/search?q=' },
-                    { engine_name: '360搜索', engine_key: 'so', engine_url: 'https://www.so.com/s?q=' }
-                ];
-                
-                // 填充搜索引擎选择器并更新映射
-                defaultEngines.forEach(engine => {
+                // 加载失败时使用兜底引擎，保证搜索框仍可用
+                fallbackEngines.forEach(engine => {
                     $("#search-engine").append(`<option value="${escapeHtml(engine.engine_key)}">${escapeHtml(engine.engine_name)}</option>`);
                     searchEngines[engine.engine_key] = engine.engine_url;
                 });
@@ -812,10 +818,15 @@ $(document).ready(function() {
             
             // 获取选择的搜索引擎
             let selectedEngine = $("#search-engine").val();
-            let searchUrl = searchEngines[selectedEngine] + encodeURIComponent(searchKey);
+            const searchBase = searchEngines[selectedEngine];
+            if (!searchBase) {
+                alert("暂无可用搜索引擎，请先在后台「搜索引擎」中启用。");
+                return;
+            }
+            let searchUrl = searchBase + encodeURIComponent(searchKey);
             
             // 打开新窗口进行网络搜索
-            window.open(searchUrl, '_blank');
+            window.open(searchUrl, '_blank', 'noopener,noreferrer');
         });
     }
     

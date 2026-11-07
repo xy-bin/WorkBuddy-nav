@@ -23,7 +23,7 @@ const API_ROUTES = [
     /^\/api\/announcements(\/\d+)?$/,
     /^\/api\/clear-all-data$/,
     /^\/api\/image-sources(\/\d+)?$/,
-    /^\/api\/search-engines(\/\d+)?$/,
+    /^\/api\/search-engines(\/\d+|\/active)?$/,
     /^\/api\/pending-bookmarks(\/\d+\/(approve|reject))?$/,
     /^\/api\/website-settings$/,
     /^\/api\/v1\/jsadd$/,
