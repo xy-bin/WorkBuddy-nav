@@ -1,19 +1,42 @@
 /* ============================================================
-   admin-theme.css — 管理后台视觉主题（依赖 nav-theme.css 的 CSS 变量）
+   admin-theme.css — 管理后台「控制台」视觉主题
    源文件: static-nav/res/  →  pages/scripts/build.mjs 复制到 public/res/
-   纯 CSS 覆盖，不改动任何 DOM 结构、ID 与业务逻辑。
+   参照 iLinks 控制台：干净浅底 + 清爽绿主色 + 窄侧栏 + 横向标签页。
+   纯 CSS 覆盖，不改动任何 ID、面板显隐与业务逻辑。
+   仅作用于 body.page-admin，变量重定义不会影响首页 / 登录页。
    ============================================================ */
 
 body.page-admin {
+    --nv-primary: #0e9b74;
+    --nv-primary-soft: #e8f7f0;
+    --nv-gradient: linear-gradient(135deg, #0e9b74 0%, #3ec79c 100%);
+    --nv-ink: #1e2b27;
+    --nv-sub: #6b7c77;
+    --nv-bg: #f6f9f8;
+    --nv-card: #ffffff;
+    --nv-glass: rgba(255, 255, 255, .94);
+    --nv-line: rgba(18, 56, 45, .10);
+    --nv-shadow: 0 2px 14px -8px rgba(18, 56, 45, .26);
+    --nv-shadow-hover: 0 14px 28px -16px rgba(14, 155, 116, .48);
+
     font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
         "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
     color: var(--nv-ink);
-    background-color: var(--nv-bg) !important;
-    background-image:
-        radial-gradient(900px 420px at 6% -8%, rgba(99, 102, 241, .10), transparent 60%),
-        radial-gradient(700px 380px at 98% 0%, rgba(6, 182, 212, .08), transparent 60%);
-    background-attachment: fixed;
+    background: var(--nv-bg) !important;
     -webkit-font-smoothing: antialiased;
+}
+
+body.dark.page-admin {
+    --nv-primary: #4ade9f;
+    --nv-primary-soft: rgba(74, 222, 159, .12);
+    --nv-gradient: linear-gradient(135deg, #0e9b74 0%, #2aa882 100%);
+    --nv-ink: #e9f5f0;
+    --nv-sub: #9db3ab;
+    --nv-bg: #0d1412;
+    --nv-card: #151f1c;
+    --nv-glass: rgba(21, 31, 28, .94);
+    --nv-line: rgba(255, 255, 255, .09);
+    --nv-shadow: 0 8px 24px -14px rgba(0, 0, 0, .7);
 }
 
 /* ---------------- 顶部栏 ---------------- */
@@ -21,89 +44,293 @@ body.page-admin > header {
     position: sticky;
     top: 0;
     z-index: 40;
+    padding: 9px 22px !important;
     background: var(--nv-glass) !important;
-    -webkit-backdrop-filter: blur(18px) saturate(150%);
-    backdrop-filter: blur(18px) saturate(150%);
+    -webkit-backdrop-filter: blur(16px) saturate(150%);
+    backdrop-filter: blur(16px) saturate(150%);
     border-bottom: 1px solid var(--nv-line);
-    box-shadow: 0 6px 24px -18px rgba(16, 24, 40, .5) !important;
+    box-shadow: 0 2px 12px -9px rgba(18, 56, 45, .4) !important;
 }
 
-body.page-admin > header i.fa-cogs {
-    width: 40px;
-    height: 40px;
-    border-radius: 12px;
+body.page-admin > header .admin-topbar {
+    gap: 18px;
+    min-height: 44px;
+}
+
+body.page-admin .admin-brand {
+    gap: 10px;
+    flex: 0 0 auto;
+}
+
+body.page-admin .admin-brand-logo {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
     display: grid;
     place-items: center;
-    background: var(--nv-gradient);
-    color: #fff !important;
-    font-size: 17px !important;
-    margin-right: 12px !important;
-    box-shadow: 0 10px 22px -12px rgba(79, 70, 229, .85);
+    background: linear-gradient(135deg, #12a37c, #43cda4);
+    color: #fff;
+    font-size: 16px;
+    box-shadow: 0 7px 16px -9px rgba(14, 155, 116, .95);
 }
 
-body.page-admin > header h1 {
-    font-size: 19px !important;
-    font-weight: 750 !important;
+body.page-admin .admin-brand-title {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    margin: 0 !important;
+    line-height: 1.25;
+}
+
+body.page-admin .admin-brand-title strong {
+    font-size: 15.5px;
+    font-weight: 750;
     color: var(--nv-ink) !important;
-    letter-spacing: .3px;
+    letter-spacing: .2px;
 }
 
-body.page-admin a[href="index.html"] {
-    background: var(--nv-gradient) !important;
-    border-radius: 11px !important;
-    box-shadow: 0 8px 18px -10px rgba(79, 70, 229, .8);
+body.page-admin .admin-brand-title small {
+    font-size: 10.5px;
+    font-weight: 500;
+    color: var(--nv-sub);
 }
 
-body.page-admin #logout-btn {
-    background: var(--nv-card) !important;
-    border: 1px solid var(--nv-line);
+body.page-admin .admin-notice {
+    flex: 1 1 auto;
+    min-width: 0;
+    max-width: 480px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 15px;
+    border-radius: 999px;
+    background: var(--nv-primary-soft);
+    border: 1px solid rgba(14, 155, 116, .10);
+    color: var(--nv-sub);
+    font-size: 11.5px;
+}
+
+body.page-admin .admin-notice i {
+    color: var(--nv-primary);
+    font-size: 11px;
+    flex: 0 0 auto;
+}
+
+body.page-admin .admin-notice span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+body.page-admin .admin-tools {
+    gap: 2px;
+    flex: 0 0 auto;
+}
+
+body.page-admin .admin-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-right: 8px;
+    font-size: 11px;
+    color: var(--nv-primary);
+    white-space: nowrap;
+}
+
+body.page-admin .admin-status i {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #22c55e;
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, .14);
+}
+
+body.page-admin > header a[href="index.html"],
+body.page-admin .admin-tool-link {
+    display: inline-flex !important;
+    align-items: center;
+    gap: 6px;
+    background: transparent !important;
+    border: 0 !important;
     color: var(--nv-sub) !important;
+    font-size: 12px !important;
+    font-weight: 550;
+    padding: 7px 10px !important;
+    border-radius: 8px !important;
+    box-shadow: none !important;
+    white-space: nowrap;
+    transition: background .18s ease, color .18s ease;
+}
+
+body.page-admin > header a[href="index.html"]:hover,
+body.page-admin .admin-tool-link:hover {
+    background: var(--nv-primary-soft) !important;
+    color: var(--nv-primary) !important;
 }
 
 body.page-admin #admin-mobile-menu-btn {
-    border-radius: 14px !important;
+    border-radius: 10px !important;
     border: 1px solid var(--nv-line);
     background: var(--nv-card) !important;
     box-shadow: var(--nv-shadow);
 }
 
+/* ---------------- 页面头 + 横向标签页 ---------------- */
+body.page-admin .admin-pagehead {
+    padding: 2px 2px 14px;
+    border-bottom: 1px solid var(--nv-line);
+}
+
+body.page-admin .admin-crumb {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 11px;
+    color: #98a7a2;
+}
+
+body.page-admin .admin-crumb i { font-size: 10px; }
+body.page-admin .admin-crumb b { color: var(--nv-sub); font-weight: 600; }
+
+body.page-admin .admin-pagehead h2 {
+    margin: 8px 0 4px !important;
+    font-size: 21px !important;
+    font-weight: 750 !important;
+    color: var(--nv-ink) !important;
+    letter-spacing: .2px;
+}
+
+body.page-admin .admin-pagehead p {
+    margin: 0;
+    font-size: 12.5px;
+    color: var(--nv-sub);
+}
+
+body.page-admin .admin-tabs {
+    display: flex;
+    align-items: stretch;
+    gap: 2px;
+    overflow-x: auto;
+    scrollbar-width: thin;
+    border-bottom: 1px solid var(--nv-line);
+    margin: 0 0 18px;
+    -webkit-overflow-scrolling: touch;
+}
+
+body.page-admin .admin-tabs a {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    flex: 0 0 auto;
+    padding: 11px 13px;
+    font-size: 12.5px;
+    color: var(--nv-sub);
+    white-space: nowrap;
+    transition: color .18s ease, background .18s ease;
+}
+
+body.page-admin .admin-tabs a:hover {
+    color: var(--nv-primary);
+    background: var(--nv-primary-soft);
+}
+
+body.page-admin .admin-tabs a.is-active {
+    color: var(--nv-primary);
+    font-weight: 700;
+}
+
+body.page-admin .admin-tabs a.is-active::after {
+    content: "";
+    position: absolute;
+    left: 11px;
+    right: 11px;
+    bottom: 0;
+    height: 2px;
+    border-radius: 2px 2px 0 0;
+    background: var(--nv-primary);
+}
+
+body.page-admin .admin-tab-badge {
+    font-style: normal;
+    font-size: 9px;
+    line-height: 1;
+    padding: 2px 4px;
+    border-radius: 4px;
+    background: #fee9e8;
+    color: #e05a52;
+    font-weight: 700;
+}
+
+body.page-admin .admin-tab-badge.hot {
+    background: #fff0dd;
+    color: #e08a20;
+}
+
 /* ---------------- 左侧菜单 ---------------- */
+body.page-admin main.container { padding-top: 22px !important; }
+body.page-admin main.container > div { gap: 20px !important; }
+body.page-admin main.container > div > aside { width: 186px; flex: 0 0 186px; }
+
 body.page-admin #admin-sidebar {
     background: var(--nv-card) !important;
     border: 1px solid var(--nv-line);
-    border-radius: 22px !important;
+    border-radius: 12px !important;
     box-shadow: var(--nv-shadow) !important;
-    padding: 14px !important;
-    top: 88px !important;
+    padding: 8px !important;
+    top: 78px !important;
 }
 
+body.page-admin .admin-nav-group {
+    padding: 14px 12px 5px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: #9aa9a4;
+}
+
+body.page-admin .admin-nav-group:first-child { padding-top: 6px; }
+
 body.page-admin #admin-sidebar ul > li > a {
-    border-radius: 12px !important;
-    padding: 11px 14px !important;
+    position: relative;
+    border-radius: 8px !important;
+    padding: 9px 12px !important;
     color: var(--nv-sub) !important;
-    font-size: 13.5px;
+    font-size: 12.5px;
     font-weight: 550;
-    transition: background .2s ease, color .2s ease, transform .2s ease;
+    transition: background .18s ease, color .18s ease;
 }
 
 body.page-admin #admin-sidebar ul > li > a:hover {
     background: var(--nv-primary-soft) !important;
     color: var(--nv-primary) !important;
-    transform: translateX(3px);
 }
 
 body.page-admin #admin-sidebar ul > li > a.bg-primary,
 body.page-admin #admin-sidebar ul > li > a.text-white {
-    background: var(--nv-gradient) !important;
-    color: #fff !important;
-    box-shadow: 0 10px 22px -12px rgba(79, 70, 229, .9);
+    background: var(--nv-primary-soft) !important;
+    color: var(--nv-primary) !important;
+    font-weight: 700;
+    box-shadow: none !important;
+}
+
+body.page-admin #admin-sidebar ul > li > a.bg-primary::before,
+body.page-admin #admin-sidebar ul > li > a.text-white::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 18%;
+    bottom: 18%;
+    width: 3px;
+    border-radius: 0 3px 3px 0;
+    background: var(--nv-primary);
 }
 
 body.page-admin #admin-sidebar ul > li > a i {
-    width: 20px;
+    width: 17px;
     text-align: center;
-    margin-right: 12px !important;
-    font-size: 14px;
+    margin-right: 10px !important;
+    font-size: 13px;
 }
 
 /* ---------------- 内容面板 ---------------- */
@@ -116,41 +343,37 @@ body.page-admin section.flex-1 { min-width: 0; max-width: 100%; }
 body.page-admin section.flex-1 > div[id][class*="rounded-xl"] {
     background: var(--nv-card) !important;
     border: 1px solid var(--nv-line);
-    border-radius: 22px !important;
+    border-radius: 14px !important;
     box-shadow: var(--nv-shadow) !important;
-    padding: 26px !important;
-    margin-bottom: 24px !important;
+    padding: 22px !important;
+    margin-bottom: 20px !important;
 }
 
-body.page-admin section.flex-1 > div[id] > h2:first-child {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-size: 18px !important;
-    font-weight: 750 !important;
-    color: var(--nv-ink) !important;
-    letter-spacing: .3px;
-    padding-bottom: 14px;
-    margin-bottom: 20px !important;
+body.page-admin section.flex-1 > div[id] > div.flex.justify-between.items-center {
+    padding-bottom: 12px;
+    margin-bottom: 16px !important;
     border-bottom: 1px solid var(--nv-line);
 }
 
-body.page-admin section.flex-1 > div[id] > h2:first-child::before {
-    content: "";
-    width: 4px;
-    height: 18px;
-    border-radius: 3px;
-    background: var(--nv-gradient);
-    flex: 0 0 4px;
+body.page-admin section.flex-1 > div[id] h2 {
+    font-size: 15px !important;
+    font-weight: 700 !important;
+    color: var(--nv-ink) !important;
+}
+
+body.page-admin section.flex-1 > div[id] h3 {
+    font-size: 13.5px !important;
+    font-weight: 700 !important;
+    color: var(--nv-ink) !important;
 }
 
 /* ---------------- 仪表盘统计卡片 ---------------- */
 body.page-admin #dashboard .grid > div {
     background: var(--nv-card) !important;
     border: 1px solid var(--nv-line) !important;
-    border-radius: 18px !important;
+    border-radius: 12px !important;
     box-shadow: var(--nv-shadow) !important;
-    padding: 20px !important;
+    padding: 16px !important;
     position: relative;
     overflow: hidden;
     transition: transform .22s ease, box-shadow .22s ease;
@@ -162,8 +385,11 @@ body.page-admin #dashboard .grid > div::before {
     inset: 0 auto 0 0;
     width: 3px;
     background: var(--nv-gradient);
-    opacity: .75;
+    opacity: .8;
 }
+
+/* 图表卡片不是统计卡片，不要左侧色条 */
+body.page-admin #dashboard .grid > div:has(canvas)::before { display: none; }
 
 body.page-admin #dashboard .grid > div:hover {
     transform: translateY(-3px);
@@ -171,7 +397,7 @@ body.page-admin #dashboard .grid > div:hover {
 }
 
 body.page-admin #dashboard .grid > div p.text-2xl {
-    font-size: 28px !important;
+    font-size: 26px !important;
     font-weight: 800 !important;
     color: var(--nv-primary) !important;
     font-variant-numeric: tabular-nums;
@@ -184,123 +410,173 @@ body.page-admin #dashboard .grid > div p.text-sm {
 }
 
 body.page-admin #dashboard .grid > div .w-12.h-12 {
-    width: 46px !important;
-    height: 46px !important;
-    border-radius: 14px !important;
+    width: 44px !important;
+    height: 44px !important;
+    border-radius: 12px !important;
     display: grid;
     place-items: center;
     background: var(--nv-primary-soft) !important;
 }
 
+body.page-admin #dashboard .grid > div .w-12.h-12 i {
+    color: var(--nv-primary) !important;
+}
+
 /* ---------------- 表格 ---------------- */
 body.page-admin table {
     border: 1px solid var(--nv-line);
-    border-radius: 14px;
+    border-radius: 10px;
     overflow: hidden;
     border-collapse: separate;
     border-spacing: 0;
 }
 
 body.page-admin table thead th {
-    background: rgba(99, 102, 241, .06) !important;
+    background: var(--nv-primary-soft) !important;
     color: var(--nv-sub) !important;
     font-weight: 700;
-    font-size: 12px;
-    letter-spacing: .4px;
-    padding: 12px 14px !important;
+    font-size: 11.5px;
+    letter-spacing: .3px;
+    padding: 10px 12px !important;
     border-bottom: 1px solid var(--nv-line) !important;
     white-space: nowrap;
 }
 
 body.page-admin table tbody td {
-    padding: 12px 14px !important;
+    padding: 10px 12px !important;
     border-bottom: 1px solid var(--nv-line) !important;
     color: var(--nv-ink);
-    font-size: 13px;
+    font-size: 12.5px;
     vertical-align: middle;
 }
 
 body.page-admin table tbody tr:hover td {
-    background: rgba(99, 102, 241, .045);
+    background: rgba(14, 155, 116, .045);
 }
 
 body.page-admin table tbody tr:last-child td {
     border-bottom: 0 !important;
 }
 
-/* ---------------- 表单与按钮 ---------------- */
+/* ---------------- 表单 ---------------- */
 body.page-admin input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
 body.page-admin select,
 body.page-admin textarea {
-    border-radius: 11px !important;
+    border-radius: 8px !important;
     border: 1px solid var(--nv-line) !important;
     background: var(--nv-card) !important;
     color: var(--nv-ink) !important;
+    font-size: 12.5px !important;
+    padding: 8px 11px !important;
+    box-shadow: none !important;
     transition: box-shadow .2s ease, border-color .2s ease;
 }
 
 body.page-admin input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):focus,
 body.page-admin select:focus,
 body.page-admin textarea:focus {
-    box-shadow: 0 0 0 3px rgba(99, 102, 241, .14) !important;
-    border-color: rgba(99, 102, 241, .45) !important;
+    box-shadow: 0 0 0 3px rgba(14, 155, 116, .12) !important;
+    border-color: rgba(14, 155, 116, .5) !important;
     outline: none;
 }
 
+/* 参考图的横向表单：标签在左、控件在右。
+   仅作用于「label.block + 单个控件」的表单行；带 .hidden 的容器必须排除，
+   否则会强制显示本来由 JS 控制隐藏的容器（如自定义背景图 URL）。 */
+body.page-admin :is(#category-form, #link-form, #image-source-form,
+    #announcement-form, #website-settings, #search-engine-form,
+    #theme-settings) div:has(> label.block):not(.hidden) {
+    display: grid;
+    grid-template-columns: 92px minmax(0, 1fr);
+    align-items: start;
+    gap: 10px;
+}
+
+body.page-admin :is(#category-form, #link-form, #image-source-form,
+    #announcement-form, #website-settings, #search-engine-form,
+    #theme-settings) div:has(> label.block):not(.hidden) > label.block {
+    margin: 0 !important;
+    padding-top: 9px;
+    text-align: right;
+    font-size: 12px !important;
+    color: var(--nv-sub) !important;
+    font-weight: 550;
+}
+
+body.page-admin :is(#category-form, #link-form, #image-source-form,
+    #announcement-form, #website-settings, #search-engine-form,
+    #theme-settings) div:has(> label.block):not(.hidden) > :not(label) {
+    grid-column: 2;
+    min-width: 0;
+}
+
+/* ---------------- 按钮 ---------------- */
 body.page-admin button {
-    border-radius: 11px !important;
+    border-radius: 8px !important;
     font-weight: 600;
     transition: transform .18s ease, filter .18s ease, box-shadow .18s ease !important;
 }
 
 body.page-admin button:hover {
     transform: translateY(-1px);
-    filter: brightness(1.04);
+    filter: brightness(1.03);
 }
 
-body.page-admin button:active {
-    transform: none;
-}
+body.page-admin button:active { transform: none; }
 
 body.page-admin button.bg-primary,
 body.page-admin a.bg-primary {
-    background: var(--nv-gradient) !important;
+    background: var(--nv-primary) !important;
     color: #fff !important;
-    box-shadow: 0 8px 18px -10px rgba(79, 70, 229, .8);
+    box-shadow: 0 7px 16px -9px rgba(14, 155, 116, .75) !important;
+}
+
+body.page-admin button.border {
+    background: var(--nv-card) !important;
+    border: 1px solid var(--nv-line) !important;
+    color: var(--nv-sub) !important;
+}
+
+body.page-admin button.border:hover {
+    background: var(--nv-primary-soft) !important;
+    color: var(--nv-primary) !important;
 }
 
 /* ---------------- 弹层 ---------------- */
 body.page-admin div.fixed.inset-0 > div {
     background: var(--nv-card) !important;
     border: 1px solid var(--nv-line);
-    border-radius: 22px !important;
-    box-shadow: 0 30px 70px -24px rgba(16, 24, 40, .5) !important;
+    border-radius: 14px !important;
+    box-shadow: 0 28px 64px -26px rgba(16, 40, 32, .42) !important;
 }
 
-/* ---------------- 响应式与无障碍 ---------------- */
-@media (max-width: 1024px) {
-    body.page-admin section.flex-1 > div[id][class*="rounded-xl"] { padding: 20px !important; }
-    body.page-admin #admin-sidebar { top: 16px !important; }
+/* ---------------- 页脚 ---------------- */
+body.page-admin > footer {
+    background: transparent !important;
+    border-top: 1px solid var(--nv-line);
+    color: var(--nv-sub) !important;
+    font-size: 11.5px;
+    padding: 18px !important;
+    box-shadow: none !important;
 }
 
-@media (max-width: 640px) {
-    body.page-admin > header { padding-left: 16px !important; padding-right: 16px !important; }
-    body.page-admin > header h1 { font-size: 16px !important; }
-    body.page-admin section.flex-1 > div[id][class*="rounded-xl"] { padding: 16px !important; border-radius: 18px !important; }
-    body.page-admin table thead th,
-    body.page-admin table tbody td { padding: 10px 8px !important; font-size: 12px; }
+/* ---------------- 响应式 ---------------- */
+@media (max-width: 1100px) {
+    body.page-admin .admin-notice { display: none; }
 }
 
-/* ---------------- 移动端后台：侧栏改为横向标签条 ---------------- */
 @media (max-width: 1023px) {
     body.page-admin main.container { padding: 16px 12px !important; }
-    body.page-admin main.container > div { gap: 16px !important; }
+    body.page-admin main.container > div { gap: 14px !important; }
+    body.page-admin main.container > div > aside { width: 100%; flex: 0 0 100%; }
     body.page-admin > div.md\:hidden { display: none !important; }
+    /* 手机上侧栏已是横滑标签条，隐藏重复的模块标签页 */
+    body.page-admin .admin-tabs { display: none !important; }
     body.page-admin #admin-sidebar {
         display: block !important;
         position: static !important;
         padding: 8px !important;
-        border-radius: 16px !important;
+        border-radius: 12px !important;
     }
     body.page-admin #admin-sidebar > ul {
         display: flex !important;
@@ -312,11 +588,14 @@ body.page-admin div.fixed.inset-0 > div {
     }
     body.page-admin #admin-sidebar > ul > li { flex: 0 0 auto !important; }
     body.page-admin #admin-sidebar > ul > li + li { margin-top: 0 !important; }
+    body.page-admin .admin-nav-group { display: none !important; }
     body.page-admin #admin-sidebar > ul > li > a {
         white-space: nowrap !important;
         padding: 9px 13px !important;
-        font-size: 13px !important;
+        font-size: 12.5px !important;
     }
+    body.page-admin #admin-sidebar > ul > li > a.bg-primary::before,
+    body.page-admin #admin-sidebar > ul > li > a.text-white::before { display: none; }
     body.page-admin #admin-sidebar > ul > li > a > i { margin-right: 7px !important; }
     body.page-admin section.flex-1 { min-width: 0; max-width: 100%; }
     body.page-admin table { min-width: 560px; }
@@ -324,10 +603,38 @@ body.page-admin div.fixed.inset-0 > div {
 }
 
 @media (max-width: 640px) {
-    body.page-admin > header .container.flex { flex-wrap: wrap !important; gap: 10px !important; }
-    body.page-admin > header .container.flex > div { gap: 8px !important; }
-    body.page-admin > header a,
-    body.page-admin > header button { padding: 7px 11px !important; font-size: 12px !important; }
+    body.page-admin > header { padding: 8px 12px !important; }
+    body.page-admin > header .admin-topbar { flex-wrap: wrap !important; gap: 6px !important; }
+    body.page-admin .admin-status { display: none; }
+    body.page-admin .admin-brand-logo { width: 30px; height: 30px; font-size: 14px; }
+    body.page-admin .admin-brand-title strong { font-size: 14px; }
+    body.page-admin .admin-brand-title small { font-size: 10px; }
+    body.page-admin .admin-tool-link { padding: 6px 8px !important; font-size: 11.5px !important; }
+    body.page-admin .admin-pagehead h2 { font-size: 18px !important; }
+    body.page-admin section.flex-1 > div[id][class*="rounded-xl"] {
+        padding: 14px !important;
+        border-radius: 12px !important;
+    }
+    body.page-admin table thead th,
+    body.page-admin table tbody td { padding: 9px 8px !important; font-size: 12px; }
+    /* 窄屏表单回到上下结构，避免输入框过窄 */
+    body.page-admin :is(#category-form, #link-form, #image-source-form,
+        #announcement-form, #website-settings, #search-engine-form,
+        #theme-settings) div:has(> label.block):not(.hidden) {
+        display: block;
+    }
+    body.page-admin :is(#category-form, #link-form, #image-source-form,
+        #announcement-form, #website-settings, #search-engine-form,
+        #theme-settings) div:has(> label.block):not(.hidden) > label.block {
+        text-align: left;
+        padding-top: 0;
+        margin-bottom: 5px !important;
+    }
+    body.page-admin :is(#category-form, #link-form, #image-source-form,
+        #announcement-form, #website-settings, #search-engine-form,
+        #theme-settings) div:has(> label.block):not(.hidden) > :not(label) {
+        grid-column: auto;
+    }
 }
 
 @media (prefers-reduced-motion: reduce) {

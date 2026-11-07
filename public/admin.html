@@ -39,23 +39,31 @@
         }
     </style>
     <!-- 视觉主题（纯 CSS 增强，须在 Tailwind CDN 之后加载） -->
-    <link rel="stylesheet" href="res/nav-theme.css?v=20261107f">
-    <link rel="stylesheet" href="res/admin-theme.css?v=20261107f">
+    <link rel="stylesheet" href="res/nav-theme.css?v=20261107g">
+    <link rel="stylesheet" href="res/admin-theme.css?v=20261107g">
 </head>
 <body class="bg-gray-50 min-h-screen page-admin">
-    <!-- 顶部导航栏 -->
-    <header class="bg-white shadow-sm py-4 px-6">
-        <div class="container mx-auto flex justify-between items-center">
-            <div class="flex items-center">
-                <i class="fa fa-cogs text-primary text-2xl mr-3"></i>
-                <h1 class="text-xl font-bold text-gray-800">导航站管理后台</h1>
+    <!-- 顶部导航栏（控制台风格） -->
+    <header class="bg-white shadow-sm py-3 px-6">
+        <div class="container mx-auto flex justify-between items-center admin-topbar">
+            <div class="flex items-center admin-brand">
+                <span class="admin-brand-logo"><i class="fa fa-bookmark"></i></span>
+                <h1 class="admin-brand-title">
+                    <strong>拾光书签 · 控制台</strong>
+                    <small>导航站管理工作台</small>
+                </h1>
             </div>
-            <div class="flex items-center space-x-4">
-                <a href="index.html" target="_blank" class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors">
-                    <i class="fa fa-eye mr-1"></i> 查看网站
+            <div class="admin-notice" id="admin-notice">
+                <i class="fa fa-bullhorn"></i>
+                <span>公告 · 站点数据已同步云端，修改后自动保存</span>
+            </div>
+            <div class="flex items-center admin-tools">
+                <span class="admin-status"><i></i> 服务正常</span>
+                <a href="index.html" target="_blank" class="admin-tool-link" title="查看网站">
+                    <i class="fa fa-external-link"></i> 查看主页
                 </a>
-                <button id="logout-btn" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors">
-                    <i class="fa fa-sign-out mr-1"></i> 退出登录
+                <button id="logout-btn" class="admin-tool-link" title="退出登录">
+                    <i class="fa fa-sign-out"></i> 退出登录
                 </button>
             </div>
         </div>
@@ -75,13 +83,15 @@
             <!-- 左侧菜单 -->
             <aside class="lg:w-64 w-full">
                 <div id="admin-sidebar" class="bg-white rounded-xl shadow-sm p-4 sticky top-4">
-                    <ul class="space-y-2">
+                    <ul class="space-y-1">
+                        <li class="admin-nav-group">工作台</li>
                         <li>
                             <a href="#dashboard" class="flex items-center p-3 rounded-lg bg-primary text-white font-medium">
                                 <i class="fa fa-dashboard mr-3"></i>
                                 <span>仪表盘</span>
                             </a>
                         </li>
+                        <li class="admin-nav-group">内容管理</li>
                         <li>
                             <a href="#category-management" class="flex items-center p-3 rounded-lg hover:bg-secondary transition-colors">
                                 <i class="fa fa-folder-open mr-3"></i>
@@ -100,6 +110,7 @@
                                 <span>待审核书签</span>
                             </a>
                         </li>
+                        <li class="admin-nav-group">站点配置</li>
                         <li>
                             <a href="#theme-settings" class="flex items-center p-3 rounded-lg hover:bg-secondary transition-colors">
                                 <i class="fa fa-paint-brush mr-3"></i>
@@ -136,6 +147,24 @@
 
             <!-- 右侧内容 -->
             <section class="flex-1">
+                <!-- 页面头：面包屑 + 标题 + 说明 -->
+                <div class="admin-pagehead">
+                    <div class="admin-crumb"><i class="fa fa-th-large"></i> 工作台 <span>/</span> <b id="admin-crumb-current">数据仪表盘</b></div>
+                    <h2 id="admin-page-title">数据仪表盘</h2>
+                    <p id="admin-page-desc">查看站点分类、书签与访问数据概览。</p>
+                </div>
+                <!-- 模块标签页：与左侧菜单联动，点击复用原有切换逻辑 -->
+                <nav class="admin-tabs" id="admin-tabs" aria-label="管理模块">
+                    <a href="#dashboard" class="is-active">仪表盘</a>
+                    <a href="#category-management">分类管理</a>
+                    <a href="#link-management">书签管理</a>
+                    <a href="#pending-bookmarks">待审核 <em class="admin-tab-badge">New</em></a>
+                    <a href="#theme-settings">主题设置 <em class="admin-tab-badge hot">Hot</em></a>
+                    <a href="#image-sources">图片源管理</a>
+                    <a href="#announcement-management">站点公告</a>
+                    <a href="#search-engine-management">搜索引擎</a>
+                    <a href="#website-settings">网站设置</a>
+                </nav>
                 <!-- 仪表盘区域 -->
                 <div id="dashboard" class="bg-white rounded-xl shadow-sm p-6 mb-8">
                     <h2 class="text-lg font-bold text-gray-800 mb-6">数据仪表盘</h2>
@@ -212,7 +241,7 @@
                 </div>
                 
                 <!-- 分类管理区域 -->
-                <div id="category-management" class="bg-white rounded-xl shadow-sm p-6 mb-8">
+                <div id="category-management" class="hidden bg-white rounded-xl shadow-sm p-6 mb-8">
                     <div class="flex justify-between items-center mb-6">
                         <h2 class="text-lg font-bold text-gray-800">分类管理</h2>
                         <button id="add-category-btn" class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors">
@@ -291,7 +320,7 @@
                 </div>
 
                 <!-- 书签管理区域 -->
-                <div id="link-management" class="bg-white rounded-xl shadow-sm p-6">
+                <div id="link-management" class="hidden bg-white rounded-xl shadow-sm p-6">
                     <h2 class="text-lg font-bold text-gray-800 mb-6">书签管理</h2>
                     
                     <!-- 功能按钮和分类选择区域 -->
@@ -383,7 +412,7 @@
                 </div>
 
                 <!-- 待审核书签区域 -->
-                <div id="pending-bookmarks" class="bg-white rounded-xl shadow-sm p-6 mb-8">
+                <div id="pending-bookmarks" class="hidden bg-white rounded-xl shadow-sm p-6 mb-8">
                     <div class="flex justify-between items-center mb-6">
                         <h2 class="text-lg font-bold text-gray-800">待审核书签</h2>
                         <button id="refresh-pending-btn" class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors">
@@ -421,7 +450,7 @@
                 </div>
 
                 <!-- 主题设置区域 -->
-                <div id="theme-settings" class="bg-white rounded-xl shadow-sm p-6">
+                <div id="theme-settings" class="hidden bg-white rounded-xl shadow-sm p-6">
                     <div class="flex justify-between items-center mb-6">
                         <h2 class="text-lg font-bold text-gray-800">主题设置</h2>
                     </div>
@@ -497,7 +526,7 @@
                 </div>
 
                 <!-- 图片源管理区域 -->
-                <div id="image-sources" class="bg-white rounded-xl shadow-sm p-6">
+                <div id="image-sources" class="hidden bg-white rounded-xl shadow-sm p-6">
                     <div class="flex justify-between items-center mb-6">
                         <h2 class="text-lg font-bold text-gray-800">图片源管理</h2>
                         <button id="add-image-source-btn" class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors">
@@ -562,7 +591,7 @@
                 </div>
 
                 <!-- 公告管理区域 -->
-                <div id="announcement-management" class="bg-white rounded-xl shadow-sm p-6">
+                <div id="announcement-management" class="hidden bg-white rounded-xl shadow-sm p-6">
                     <div class="flex justify-between items-center mb-6">
                         <h2 class="text-lg font-bold text-gray-800">公告管理</h2>
                         <button id="add-announcement-btn" class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors">
@@ -615,7 +644,7 @@
                 </div>
                 
                 <!-- 搜索引擎管理区域 -->
-                <div id="search-engine-management" class="bg-white rounded-xl shadow-sm p-6 mb-8">
+                <div id="search-engine-management" class="hidden bg-white rounded-xl shadow-sm p-6 mb-8">
                     <div class="flex justify-between items-center mb-6">
                         <h2 class="text-lg font-bold text-gray-800">搜索引擎管理</h2>
                         <button id="add-search-engine-btn" class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors">
@@ -649,7 +678,7 @@
                 </div>
                 
                 <!-- 网站设置区域 -->
-                <div id="website-settings" class="bg-white rounded-xl shadow-sm p-6 mb-8">
+                <div id="website-settings" class="hidden bg-white rounded-xl shadow-sm p-6 mb-8">
                     <div class="flex justify-between items-center mb-6">
                         <h2 class="text-lg font-bold text-gray-800">网站设置</h2>
                         <button id="save-website-settings-btn" class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors">
@@ -756,6 +785,8 @@
     <script src="js/dashboard.js"></script>
     <!-- 引入管理后台JS -->
     <script src="js/admin.js"></script>
+    <!-- 控制台布局：标签页 / 页面标题联动（纯展示层，须在 admin.js 之后） -->
+    <script src="js/admin-layout.js?v=20261107g"></script>
     
     <!-- 搜索引擎表单 -->
     <div id="search-engine-form" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">

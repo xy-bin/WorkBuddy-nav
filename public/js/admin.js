@@ -1982,7 +1982,7 @@ function bindNavigationEvents() {
         $(this).addClass("bg-primary text-white");
         
         // 隐藏所有内容区域
-        $("#dashboard, #category-management, #link-management, #pending-bookmarks, #theme-settings, #image-sources, #announcement-management, #search-engine-management").addClass("hidden");
+        $("#dashboard, #category-management, #link-management, #pending-bookmarks, #theme-settings, #image-sources, #announcement-management, #search-engine-management, #website-settings").addClass("hidden");
         
         // 显示对应的内容区域
         const target = $(this).attr("href").substring(1);
