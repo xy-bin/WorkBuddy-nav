@@ -1821,43 +1821,20 @@ function initEventListeners() {
     });
     
     // 背景图启用/禁用
-    $("#bg-image-enabled").on("change", function() {
-        const enabled = $(this).prop("checked");
-        if (enabled) {
-            $("#bg-image-api-container, #bg-image-url-container").removeClass("hidden");
-        } else {
-            $("#bg-image-api-container, #bg-image-url-container").addClass("hidden");
-        }
-    });
+    $("#bg-image-enabled").on("change", function() { window.syncBgContainers(); });
     
     // 背景图类型切换
-    $("input[name='bg-image-type']").on("change", function() {
-        const type = $(this).val();
-        if (type === "random") {
-            $("#bg-image-api-container").removeClass("hidden");
-            $("#bg-image-url-container").addClass("hidden");
-        } else {
-            $("#bg-image-api-container").addClass("hidden");
-            $("#bg-image-url-container").removeClass("hidden");
-        }
-    });
+    $("input[name='bg-image-type']").on("change", function() { window.syncBgContainers(); });
     
     // 保存主题设置
     $("#save-theme-settings").on("click", function() {
-        const settings = {
-            theme: $("input[name='theme']:checked").val(),
-            bgImageEnabled: $("#bg-image-enabled").prop("checked"),
-            bgImageType: $("input[name='bg-image-type']:checked").val(),
-            bgImageApi: $("#bg-image-api").val(),
-            bgImageUrl: $("#bg-image-url").val()
-        };
-        localStorage.setItem("themeSettings", JSON.stringify(settings));
-        alert("主题设置已保存");
+        window.saveThemeSettings(true);
     });
     
-    // 预览主题效果
+    // 预览主题效果：先保存再新开首页（同源共享 localStorage）
     $("#preview-theme").on("click", function() {
-        alert("预览功能即将实现");
+        window.saveThemeSettings(false);
+        window.open("/", "_blank", "noopener,noreferrer");
     });
     
     // 添加图片源按钮
@@ -2152,47 +2129,32 @@ function bindNavigationEvents() {
 
 // 初始化主题设置
 function initThemeSettings() {
-    const savedSettings = JSON.parse(localStorage.getItem("themeSettings"));
-    if (savedSettings) {
-        // 恢复主题
-        $(`input[name='theme'][value='${savedSettings.theme}']`).prop("checked", true);
-        document.documentElement.classList.toggle("dark", savedSettings.theme === "dark");
-        
-        // 恢复背景图设置
-        $("#bg-image-enabled").prop("checked", savedSettings.bgImageEnabled);
-        if (savedSettings.bgImageEnabled) {
-            $("#bg-image-api-container, #bg-image-url-container").removeClass("hidden");
-        }
-        
-        // 恢复背景图类型
-        $(`input[name='bg-image-type'][value='${savedSettings.bgImageType}']`).prop("checked", true);
-        if (savedSettings.bgImageType === "random") {
-            $("#bg-image-api-container").removeClass("hidden");
-            $("#bg-image-url-container").addClass("hidden");
-        } else {
-            $("#bg-image-api-container").addClass("hidden");
-            $("#bg-image-url-container").removeClass("hidden");
-        }
-        
-        // 恢复其他设置
-        $("#bg-image-api").val(savedSettings.bgImageApi);
-        $("#bg-image-url").val(savedSettings.bgImageUrl);
-    } else {
-        // 默认设置
-        $("#theme-light").prop("checked", true);
-        $("#bg-image-random").prop("checked", true);
-    }
-    
-    // 填充分图源选项
-    const imageSources = [
-        { id: 1, name: "Unsplash随机图", url: "https://source.unsplash.com/random/1920x1080" },
-        { id: 2, name: "Pexels随机图", url: "https://images.pexels.com/photos/random" },
-        { id: 3, name: "Pixabay随机图", url: "https://pixabay.com/zh/photos/random" }
-    ];
-    $("#bg-image-api").empty();
-    imageSources.forEach(source => {
-        $("#bg-image-api").append(`<option value="${safeHref(source.url)}">${esc(source.name)}</option>`);
-    });
+    let saved = {};
+    try { saved = JSON.parse(localStorage.getItem("themeSettings")) || {}; } catch (e) { saved = {}; }
+    const s = Object.assign({
+        theme: "light",
+        bgImageEnabled: false,
+        bgImageType: "random",
+        bgImageApi: "https://picsum.photos/1920/1080",
+        bgImageUrl: "",
+        bgImageOpacity: 1,
+        bgImageSize: "cover"
+    }, saved);
+
+    $(`input[name='theme'][value='${s.theme}']`).prop("checked", true);
+    document.documentElement.classList.toggle("dark", s.theme === "dark");
+    $("#bg-image-enabled").prop("checked", !!s.bgImageEnabled);
+    $(`input[name='bg-image-type'][value='${s.bgImageType}']`).prop("checked", true);
+
+    const opacity = Math.min(100, Math.max(30, Math.round(Number(s.bgImageOpacity || 1) * 100)));
+    $("#bg-image-opacity").val(opacity);
+    $("#bg-image-opacity-value").text(opacity + "%");
+    $("#bg-image-size").val(s.bgImageSize === "contain" ? "contain" : "cover");
+    $("#bg-image-url").val(s.bgImageUrl || "");
+    $("#bg-image-api").data("value", s.bgImageApi || "");
+
+    window.syncBgContainers();
+    window.loadBgImageSources();
 }
 
 
@@ -2866,3 +2828,141 @@ function rejectPendingBookmark(id) {
         });
     }
 }
+
+/* ============================================================
+   主题设置 · 背景图：挂载到 window，供 initThemeSettings 与各事件共用
+   ============================================================ */
+(function ($) {
+    'use strict';
+
+    var BUILTIN_BG_APIS = [
+        { name: 'Picsum 随机图', url: 'https://picsum.photos/1920/1080' },
+        { name: 'Picsum 随机图（免缓存）', url: 'https://picsum.photos/1920/1080?random' }
+    ];
+
+    window.setBgTip = function (text, kind) {
+        $('#bg-image-source-tip').removeClass('is-ok is-err')
+            .addClass(kind === 'err' ? 'is-err' : 'is-ok').text(text);
+    };
+
+    window.syncBgContainers = function () {
+        var enabled = $('#bg-image-enabled').prop('checked');
+        var type = $("input[name='bg-image-type']:checked").val() || 'random';
+        $('#bg-image-api-container').toggleClass('hidden', !enabled || type !== 'random');
+        $('#bg-image-url-container').toggleClass('hidden', !enabled || type !== 'custom');
+    };
+
+    window.collectThemeSettings = function () {
+        var api = $('#bg-image-api').val();
+        if (api === '__manual__') api = $('#bg-image-api-custom').val() || '';
+        return {
+            theme: $("input[name='theme']:checked").val() || 'light',
+            bgImageEnabled: $('#bg-image-enabled').prop('checked'),
+            bgImageType: $("input[name='bg-image-type']:checked").val() || 'random',
+            bgImageApi: api || '',
+            bgImageUrl: $('#bg-image-url').val() || '',
+            bgImageOpacity: Number($('#bg-image-opacity').val()) / 100,
+            bgImageSize: $('#bg-image-size').val() || 'cover'
+        };
+    };
+
+    window.saveThemeSettings = function (notify) {
+        localStorage.setItem('themeSettings', JSON.stringify(window.collectThemeSettings()));
+        window.setBgTip('主题设置已保存，点「预览效果」可立即查看首页。', 'ok');
+        if (notify) alert('主题设置已保存');
+    };
+
+    // 从「图片源管理」读取已配置地址：填充随机图下拉 + 自定义图片网格
+    window.loadBgImageSources = function () {
+        var $grid = $('#bg-image-source-picker');
+        var $select = $('#bg-image-api');
+        if (!$grid.length || !$select.length) return;
+        $grid.html('<div class="bg-src-empty">正在读取图片源…</div>');
+
+        $.ajax({
+            url: '/api/image-sources',
+            method: 'GET',
+            success: function (res) {
+                var list = (res && res.success && Array.isArray(res.data)) ? res.data : [];
+                var wantedApi = $select.data('value') || '';
+                var wantedUrl = $('#bg-image-url').val() || '';
+
+                $select.empty();
+                BUILTIN_BG_APIS.forEach(function (item) {
+                    $select.append($('<option>').val(item.url).text(item.name));
+                });
+                list.forEach(function (item) {
+                    var url = safeHref(item.url);
+                    if (url !== '#') $select.append($('<option>').val(url).text((item.name || '图片源') + ' · 图片源'));
+                });
+                $select.append($('<option>').val('__manual__').text('手动输入…'));
+                if (wantedApi) {
+                    var exists = $select.find('option').filter(function () { return this.value === wantedApi; }).length > 0;
+                    if (!exists) $select.prepend($('<option>').val(wantedApi).text('当前自定义 API'));
+                    $select.val(wantedApi);
+                }
+                var isManual = $select.val() === '__manual__';
+                $('#bg-image-api-custom').toggleClass('hidden', !isManual).val(isManual ? wantedApi : '');
+
+                $grid.empty();
+                if (!list.length) {
+                    $grid.html('<div class="bg-src-empty">还没有配置图片源，点右上「管理图片源」添加，或在下方手动输入图片 URL。</div>');
+                    window.setBgTip('未读取到图片源，可手动输入图片 URL。', 'err');
+                    return;
+                }
+                list.forEach(function (item) {
+                    var url = safeHref(item.url);
+                    if (url === '#') return;
+                    var name = String(item.name || '未命名图片源');
+                    var desc = String(item.desc || '');
+                    var $card = $('<button>', { type: 'button', 'class': 'bg-src-card' })
+                        .attr('data-url', url).attr('data-name', name)
+                        .toggleClass('is-active', !!wantedUrl && wantedUrl === url);
+                    var $thumb = $('<span>', { 'class': 'bg-src-thumb' })
+                        .append($('<span>', { 'class': 'bg-src-ph' }).html('<i class="fa fa-picture-o"></i>'));
+                    $thumb.append($('<img>', { src: url, alt: '', loading: 'lazy' })
+                        .on('error', function () { $(this).remove(); }));
+                    $card.append($thumb)
+                        .append($('<span>', { 'class': 'bg-src-name' }).text(name))
+                        .append($('<span>', { 'class': 'bg-src-desc' }).text(desc));
+                    $grid.append($card);
+                });
+                window.setBgTip('共 ' + list.length + ' 个图片源，点击卡片即可选用。', 'ok');
+            },
+            error: function () {
+                $grid.html('<div class="bg-src-empty">图片源读取失败，请刷新重试或手动输入图片 URL。</div>');
+                if (!$select.find('option').length) {
+                    BUILTIN_BG_APIS.forEach(function (item) {
+                        $select.append($('<option>').val(item.url).text(item.name));
+                    });
+                    $select.append($('<option>').val('__manual__').text('手动输入…'));
+                }
+                window.setBgTip('图片源接口读取失败，已保留内置随机图。', 'err');
+            }
+        });
+    };
+
+    $(function () {
+        if (!$('#theme-settings').length) return;
+
+        $('#bg-image-api').on('change', function () {
+            $('#bg-image-api-custom').toggleClass('hidden', $(this).val() !== '__manual__');
+        });
+        $('#bg-image-opacity').on('input', function () {
+            $('#bg-image-opacity-value').text($(this).val() + '%');
+        });
+        $('#bg-image-source-picker').on('click', '.bg-src-card', function () {
+            var $card = $(this);
+            $('#bg-image-source-picker .bg-src-card').removeClass('is-active');
+            $card.addClass('is-active');
+            $('#bg-image-url').val($card.attr('data-url') || '');
+            window.setBgTip('已选择：' + ($card.attr('data-name') || '图片源') + '，点「保存主题设置」应用。', 'ok');
+        });
+        $('#bg-image-source-reload').on('click', function () { window.loadBgImageSources(); });
+        $('#bg-image-goto-sources').on('click', function () {
+            var tab = $('#admin-tabs a[href="#image-sources"]');
+            if (tab.length) tab.trigger('click');
+            else window.location.hash = 'image-sources';
+        });
+    });
+})(window.jQuery);

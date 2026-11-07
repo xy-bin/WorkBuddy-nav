@@ -867,3 +867,93 @@ body::-webkit-scrollbar,
     width: 0;
     height: 0;
 }
+
+/* ============================================================
+   开启背景图时的「通透模式」
+   旧版三层遮挡：背景容器固定 0.3 透明度 + Hero 整块不透明渐变 +
+   侧栏/分类卡片/书签卡片纯白。这里把内容层改成半透明玻璃，
+   让整张背景图从卡片与间隙里透出来。
+   ============================================================ */
+body.page-home.has-bg-image {
+    --nv-card: rgba(255, 255, 255, .62);
+    --nv-glass: rgba(255, 255, 255, .48);
+    --nv-line: rgba(255, 255, 255, .62);
+    background-color: var(--nv-bg) !important;
+    background-image: none !important;
+}
+body.dark.page-home.has-bg-image {
+    --nv-card: rgba(18, 24, 42, .58);
+    --nv-glass: rgba(18, 24, 42, .52);
+    --nv-line: rgba(255, 255, 255, .16);
+}
+
+/* Hero：用很淡的上下渐变代替整块不透明色，中段让图片大面积透出 */
+body.page-home.has-bg-image .hero-bg {
+    background-color: transparent !important;
+    background-image: linear-gradient(180deg,
+        rgba(255,255,255,.44) 0%, rgba(255,255,255,.06) 42%, rgba(255,255,255,.30) 100%) !important;
+}
+body.dark.page-home.has-bg-image .hero-bg {
+    background-image: linear-gradient(180deg,
+        rgba(9,14,28,.60) 0%, rgba(9,14,28,.16) 42%, rgba(9,14,28,.46) 100%) !important;
+}
+body.page-home.has-bg-image .hero-inner { text-shadow: 0 1px 12px rgba(255,255,255,.62); }
+body.dark.page-home.has-bg-image .hero-inner { text-shadow: 0 1px 14px rgba(0,0,0,.9); }
+body.page-home.has-bg-image .hero-pill,
+body.page-home.has-bg-image .hero .search-bar {
+    background: rgba(255,255,255,.58) !important;
+    -webkit-backdrop-filter: blur(14px) saturate(140%);
+    backdrop-filter: blur(14px) saturate(140%);
+}
+body.dark.page-home.has-bg-image .hero-pill,
+body.dark.page-home.has-bg-image .hero .search-bar { background: rgba(18,24,42,.56) !important; }
+
+/* 主体：卡片玻璃化 */
+body.page-home.has-bg-image #sidebar-nav,
+body.page-home.has-bg-image #category-container > div[id^="category-"],
+body.page-home.has-bg-image #category-container ul[id^="link-list-"] > li,
+body.page-home.has-bg-image #current-time-container,
+body.page-home.has-bg-image > footer {
+    -webkit-backdrop-filter: blur(9px) saturate(135%);
+    backdrop-filter: blur(9px) saturate(135%);
+}
+body.page-home.has-bg-image #category-container ul[id^="link-list-"] > li {
+    background: rgba(255,255,255,.56) !important;
+}
+body.dark.page-home.has-bg-image #category-container ul[id^="link-list-"] > li {
+    background: rgba(18,24,42,.54) !important;
+}
+body.page-home.has-bg-image #category-container > div[id^="category-"] > div:first-child {
+    background: rgba(255,255,255,.18) !important;
+}
+body.dark.page-home.has-bg-image #category-container > div[id^="category-"] > div:first-child {
+    background: rgba(255,255,255,.05) !important;
+}
+body.page-home.has-bg-image #category-container > div[id^="category-"] > div:first-child > i {
+    background: rgba(255,255,255,.76) !important;
+}
+body.dark.page-home.has-bg-image #category-container > div[id^="category-"] > div:first-child > i {
+    background: rgba(255,255,255,.10) !important;
+}
+body.page-home.has-bg-image > header:not(.hero) { background: rgba(255,255,255,.55) !important; }
+body.dark.page-home.has-bg-image > header:not(.hero) { background: rgba(18,24,42,.55) !important; }
+body.page-home.has-bg-image > footer { background: rgba(255,255,255,.48) !important; }
+body.dark.page-home.has-bg-image > footer { background: rgba(18,24,42,.48) !important; }
+
+/* 两侧留出呼吸空间，背景图边缘也看得见 */
+body.page-home.has-bg-image > div.container {
+    padding-left: 18px !important;
+    padding-right: 18px !important;
+}
+
+@media (max-width: 768px) {
+    body.page-home.has-bg-image #bg-image-container { background-attachment: scroll !important; }
+    body.page-home.has-bg-image > div.container {
+        padding-left: 12px !important;
+        padding-right: 12px !important;
+    }
+    body.page-home.has-bg-image .hero-bg {
+        background-image: linear-gradient(180deg,
+            rgba(255,255,255,.58), rgba(255,255,255,.22) 48%, rgba(255,255,255,.44)) !important;
+    }
+}

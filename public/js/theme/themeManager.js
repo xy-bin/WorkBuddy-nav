@@ -16,24 +16,27 @@ class ThemeManager {
         this.bindEvents();
     }
 
-    // 创建背景图容器
+    // 创建背景图容器（样式在此统一设置，兼容页面里已存在的静态容器）
     createBgImageContainer() {
         if (!this.bgImageContainer.length) {
-            this.bgImageContainer = $('<div id="bg-image-container"></div>');
-            this.bgImageContainer.css({
-                'position': 'fixed',
-                'top': 0,
-                'left': 0,
-                'width': '100%',
-                'height': '100%',
-                'z-index': -1,
-                'background-size': 'cover',
-                'background-position': 'center',
-                'opacity': 0.3,
-                'transition': 'opacity 0.5s ease'
-            });
+            this.bgImageContainer = $('<div id="bg-image-container" aria-hidden="true"></div>');
             this.body.prepend(this.bgImageContainer);
         }
+        this.bgImageContainer.css({
+            'position': 'fixed',
+            'top': 0,
+            'left': 0,
+            'width': '100%',
+            'height': '100%',
+            'z-index': -1,
+            'pointer-events': 'none',
+            'background-repeat': 'no-repeat',
+            'background-position': 'center',
+            'background-attachment': 'fixed',
+            'background-size': 'cover',
+            'opacity': 1,
+            'transition': 'opacity .45s ease'
+        });
     }
 
     // 加载主题设置
@@ -83,21 +86,41 @@ class ThemeManager {
         console.log('切换到白天模式');
     }
 
-    // 应用背景图
+    // 安全地把 URL 写进 CSS background-image，阻止引号/换行注入
+    setBackgroundUrl(raw) {
+        const url = String(raw || '').trim().replace(/[\r\n\t]/g, '');
+        if (!/^(https?:\/\/|data:image\/)/i.test(url)) return false;
+        const safe = url.replace(/["\\]/g, '\\$&');
+        this.bgImageContainer.css('background-image', 'url("' + safe + '")');
+        return true;
+    }
+
+    // 应用背景图：开启时给 body 打标记，样式层据此把内容区切成半透明玻璃
     applyBackgroundImage(settings) {
-        if (!settings.bgImageEnabled) {
+        const enabled = !!settings.bgImageEnabled &&
+            (settings.bgImageType !== 'custom' || !!settings.bgImageUrl);
+        this.body.toggleClass('has-bg-image', enabled);
+        if (!enabled) {
             this.bgImageContainer.hide();
             return;
         }
 
-        this.bgImageContainer.show();
+        const opacity = Math.min(1, Math.max(0.3, Number(settings.bgImageOpacity) || 1));
+        const size = settings.bgImageSize === 'contain' ? 'contain' : 'cover';
+        this.bgImageContainer.css({
+            'background-size': size,
+            'background-attachment': 'fixed',
+            'background-color': size === 'contain' ? 'var(--nv-bg)' : 'transparent',
+            'opacity': opacity
+        }).show();
 
-        if (settings.bgImageType === 'random') {
-            // 使用随机图API
+        if (settings.bgImageType === 'custom' && settings.bgImageUrl) {
+            if (!this.setBackgroundUrl(settings.bgImageUrl)) {
+                this.body.removeClass('has-bg-image');
+                this.bgImageContainer.hide();
+            }
+        } else {
             this.loadRandomBackgroundImage(settings.bgImageApi);
-        } else if (settings.bgImageType === 'custom' && settings.bgImageUrl) {
-            // 使用自定义背景图
-            this.bgImageContainer.css('background-image', `url(${settings.bgImageUrl})`);
         }
     }
 
@@ -110,8 +133,8 @@ class ThemeManager {
             'https://fastly.picsum.photos/id/1015/1920/1080.jpg' // 具体ID的图片，更稳定
         ];
 
-        // 默认背景颜色（作为最后备选）
-        const defaultBgColor = '#f3f4f6'; // 浅灰色背景
+        // 默认背景颜色（作为最后备选，跟随明暗主题变量）
+        const defaultBgColor = 'var(--nv-bg)';
 
         // 如果没有指定API，直接使用备用API列表
         const apiList = apiUrl ? [apiUrl, ...backupApis] : backupApis;
@@ -147,11 +170,8 @@ class ThemeManager {
             img.onload = () => {
                 clearTimeout(timeout);
                 console.log('背景图加载成功');
-                this.bgImageContainer.css({
-                    'background-image': `url(${img.src})`,
-                    'background-color': 'transparent'
-                });
-                this.bgImageContainer.show();
+                this.setBackgroundUrl(img.src);
+                this.bgImageContainer.css('background-color', 'transparent').show();
             };
             
             img.onerror = () => {
@@ -177,6 +197,8 @@ class ThemeManager {
             bgImageEnabled: false, // 渐变首屏：默认不再叠加全屏随机照片
             bgImageType: 'random',
             bgImageUrl: '',
+            bgImageOpacity: 1,      // 1 = 原图清晰可见（旧版固定 0.3 会把图压得很淡）
+            bgImageSize: 'cover',   // cover = 铺满；contain = 完整显示不裁切
             bgImageApi: 'https://picsum.photos/1920/1080' // 使用更可靠的Picsum Photos作为默认API
         };
         const MIGRATION_KEY = 'nav-hero-gradient-v2';

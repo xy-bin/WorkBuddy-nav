@@ -1090,3 +1090,61 @@ body.page-admin .bk-tips li { margin: 0; }
     body.page-admin .bk-input { flex: 1 1 auto; width: 100%; }
     body.page-admin .bk-btn { justify-content: center; }
 }
+
+/* ---------------- 主题设置：从图片源选择背景图 ---------------- */
+body.page-admin .bg-src-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+    gap: 10px;
+    max-height: 290px;
+    overflow-y: auto;
+    padding: 2px;
+}
+body.page-admin .bg-src-card {
+    display: block; min-width: 0; padding: 6px; text-align: left;
+    border: 2px solid var(--nv-line); border-radius: 12px;
+    background: var(--nv-card); cursor: pointer; color: var(--nv-ink);
+    transition: border-color .18s ease, transform .18s ease, box-shadow .18s ease;
+}
+body.page-admin .bg-src-card:hover { transform: translateY(-2px); border-color: var(--nv-primary); }
+body.page-admin .bg-src-card.is-active {
+    border-color: var(--nv-primary);
+    box-shadow: 0 0 0 3px var(--nv-primary-soft);
+}
+body.page-admin .bg-src-thumb {
+    display: block; position: relative; width: 100%;
+    aspect-ratio: 16 / 10; border-radius: 8px; overflow: hidden;
+    background: linear-gradient(135deg, var(--nv-primary-soft), var(--nv-bg));
+}
+body.page-admin .bg-src-ph {
+    position: absolute; inset: 0; display: grid; place-items: center;
+    color: var(--nv-sub); font-size: 20px;
+}
+body.page-admin .bg-src-thumb img {
+    position: relative; z-index: 1; display: block;
+    width: 100%; height: 100%; object-fit: cover;
+}
+body.page-admin .bg-src-name {
+    display: block; margin-top: 6px; font-size: 12px; font-weight: 650;
+    color: var(--nv-ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+body.page-admin .bg-src-desc {
+    display: block; font-size: 11px; color: var(--nv-sub);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+body.page-admin .bg-src-desc:empty { display: none; }
+body.page-admin .bg-src-empty {
+    grid-column: 1 / -1; padding: 18px; text-align: center;
+    font-size: 12px; color: var(--nv-sub);
+    border: 1px dashed var(--nv-line); border-radius: 10px;
+}
+body.page-admin .bg-src-tip { margin: 8px 0 0; font-size: 11px; line-height: 1.6; color: var(--nv-sub); }
+body.page-admin .bg-src-tip:empty { display: none; }
+body.page-admin .bg-src-tip.is-ok { color: #16a34a; }
+body.page-admin .bg-src-tip.is-err { color: #ea580c; }
+body.page-admin input[type="range"].bg-range { accent-color: var(--nv-primary); height: 6px; }
+body.page-admin #theme-settings details summary { outline: none; }
+
+@media (max-width: 480px) {
+    body.page-admin .bg-src-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); max-height: 250px; }
+}
