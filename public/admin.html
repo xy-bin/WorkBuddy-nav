@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="vendor/font-awesome/css/font-awesome.min.css">
     <!-- 引入jQuery -->
     <script src="vendor/jquery/dist/jquery.min.js"></script>
-    <script src="js/security-utils.js"></script>
+    <script src="js/security-utils.js?v=20261107i"></script>
     <link rel="stylesheet" href="vendor/jquery-ui/dist/themes/base/jquery-ui.min.css">
     <script src="vendor/jquery-ui/dist/jquery-ui.min.js"></script>
 
@@ -39,8 +39,8 @@
         }
     </style>
     <!-- 视觉主题（纯 CSS 增强，须在 Tailwind CDN 之后加载） -->
-    <link rel="stylesheet" href="res/nav-theme.css?v=20261107h">
-    <link rel="stylesheet" href="res/admin-theme.css?v=20261107h">
+    <link rel="stylesheet" href="res/nav-theme.css?v=20261107i">
+    <link rel="stylesheet" href="res/admin-theme.css?v=20261107i">
 </head>
 <body class="bg-gray-50 min-h-screen page-admin">
     <!-- 顶部导航栏（控制台风格） -->
@@ -72,24 +72,26 @@
     <!-- 主体内容：顶部标签页为唯一导航，不再保留重复的左侧菜单 -->
     <main class="container mx-auto px-6 py-8 admin-main">
             <section class="flex-1">
-                <!-- 页面头：面包屑 + 标题 + 说明 -->
-                <div class="admin-pagehead">
-                    <div class="admin-crumb"><i class="fa fa-th-large"></i> 工作台 <span>/</span> <b id="admin-crumb-current">数据仪表盘</b></div>
-                    <h2 id="admin-page-title">数据仪表盘</h2>
-                    <p id="admin-page-desc">查看站点分类、书签与访问数据概览。</p>
+                <!-- 顶部吸附区：页面头 + 模块标签页，随页面滚动固定在顶栏下方 -->
+                <div class="admin-sticky">
+                    <div class="admin-pagehead">
+                        <div class="admin-crumb"><i class="fa fa-th-large"></i> 工作台 <span>/</span> <b id="admin-crumb-current">数据仪表盘</b></div>
+                        <h2 id="admin-page-title">数据仪表盘</h2>
+                        <p id="admin-page-desc">查看站点分类、书签与访问数据概览。</p>
+                    </div>
+                    <!-- 模块标签页：唯一导航，点击切换对应面板 -->
+                    <nav class="admin-tabs" id="admin-tabs" aria-label="管理模块">
+                        <a href="#dashboard" class="is-active">仪表盘</a>
+                        <a href="#category-management">分类管理</a>
+                        <a href="#link-management">书签管理</a>
+                        <a href="#pending-bookmarks">待审核 <em class="admin-tab-badge">New</em></a>
+                        <a href="#theme-settings">主题设置 <em class="admin-tab-badge hot">Hot</em></a>
+                        <a href="#image-sources">图片源管理</a>
+                        <a href="#announcement-management">站点公告</a>
+                        <a href="#search-engine-management">搜索引擎</a>
+                        <a href="#website-settings">网站设置</a>
+                    </nav>
                 </div>
-                <!-- 模块标签页：与左侧菜单联动，点击复用原有切换逻辑 -->
-                <nav class="admin-tabs" id="admin-tabs" aria-label="管理模块">
-                    <a href="#dashboard" class="is-active">仪表盘</a>
-                    <a href="#category-management">分类管理</a>
-                    <a href="#link-management">书签管理</a>
-                    <a href="#pending-bookmarks">待审核 <em class="admin-tab-badge">New</em></a>
-                    <a href="#theme-settings">主题设置 <em class="admin-tab-badge hot">Hot</em></a>
-                    <a href="#image-sources">图片源管理</a>
-                    <a href="#announcement-management">站点公告</a>
-                    <a href="#search-engine-management">搜索引擎</a>
-                    <a href="#website-settings">网站设置</a>
-                </nav>
                 <!-- 仪表盘区域 -->
                 <div id="dashboard" class="bg-white rounded-xl shadow-sm p-6 mb-8">
                     <h2 class="text-lg font-bold text-gray-800 mb-6">数据仪表盘</h2>
@@ -704,13 +706,13 @@
     <!-- 引入Quill富文本编辑器 (使用jsdelivr CDN确保可靠加载) -->
     <script src="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.min.js"></script>
     <!-- 引入主题管理脚本 -->
-    <script src="js/theme/themeManager.js"></script>
+    <script src="js/theme/themeManager.js?v=20261107i"></script>
     <!-- 引入仪表盘JS -->
-    <script src="js/dashboard.js"></script>
+    <script src="js/dashboard.js?v=20261107i"></script>
     <!-- 引入管理后台JS -->
-    <script src="js/admin.js"></script>
+    <script src="js/admin.js?v=20261107i"></script>
     <!-- 控制台布局：标签页 / 页面标题联动（纯展示层，须在 admin.js 之后） -->
-    <script src="js/admin-layout.js?v=20261107h"></script>
+    <script src="js/admin-layout.js?v=20261107i"></script>
     
     <!-- 搜索引擎表单 -->
     <div id="search-engine-form" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">

@@ -39,7 +39,7 @@ const HEADERS = `/*
   Cache-Control: public, max-age=0, must-revalidate
 
 /js/*
-  Cache-Control: public, max-age=3600
+  Cache-Control: public, max-age=0, must-revalidate
 
 /res/*
   Cache-Control: public, max-age=3600
