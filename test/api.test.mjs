@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { onRequest } from '../functions/api/[[path]].js';
 import { onRequest as middleware } from '../functions/_middleware.js';
 import { onRequestGet as adminPage } from '../functions/admin.html.js';
-import { hashPassword } from '../lib/auth.js';
+import { hashPassword, getJsaddToken } from '../lib/auth.js';
 import { STATE_KEY } from '../lib/store.js';
 
 const ORIGIN = 'https://nav.test';
@@ -388,6 +388,62 @@ await test('搜索引擎：非法参数被拒绝；新增引擎默认启用；�
 await test('KV 写入次数受控：无 Alarm、无逐 PV 写盘', async () => {
     assert.ok(kv.writes > 0);
     assert.ok(kv.writes < 50, '单次会话内 KV 写入不应失控，实际 ' + kv.writes);
+});
+
+await test('一键添加：未配 JSADD_TOKEN 时由 SESSION_SECRET 派生令牌，登录页注入且接口可用', async () => {
+    const derivedEnv = { ...env, JSADD_TOKEN: undefined };
+    const expected = await getJsaddToken(derivedEnv);
+    assert.match(expected, /^[0-9a-f]{64}$/, '应派生 64 位十六进制令牌');
+    assert.notEqual(expected, derivedEnv.SESSION_SECRET, '不得直接暴露会话密钥');
+
+    const html = '<html><head><title>admin</title></head><body>ok</body></html>';
+    const ctx = context('GET', '/admin', { cookie, env: derivedEnv });
+    ctx.next = async () => new Response(html, { status: 200, headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+    const body = await (await middleware(ctx)).text();
+    assert.ok(body.includes('window.__JSADD_TOKEN__="' + expected + '"'), '已登录管理页应注入派生令牌');
+
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = async () => new Response(
+        '<html><head><meta name="description" content="测试描述"><link rel="icon" href="/favicon.ico"></head></html>',
+        { status: 200, headers: { 'Content-Type': 'text/html' } }
+    );
+    let res;
+    try {
+        const target = encodeURIComponent('https://example.com/jsadd-probe');
+        res = await onRequest(context('GET', '/api/v1/jsadd?token=' + expected + '&name=' + encodeURIComponent('测试站点') + '&url=' + target, {
+            env: derivedEnv
+        }));
+    } finally {
+        globalThis.fetch = originalFetch;
+    }
+    assert.equal(res.status, 200);
+    const page = await res.text();
+    assert.ok(page.includes('添加成功'), '应显示成功结果页');
+    assert.ok(page.includes('nav-jsadd-close'), '结果页应支持关闭弹层');
+    assert.equal(res.headers.get('X-Frame-Options'), null, '结果页不得带 SAMEORIGIN，否则 iframe 无法嵌入');
+    assert.ok((res.headers.get('Content-Security-Policy') || '').includes('frame-ancestors *'));
+});
+
+await test('一键添加：错误令牌 401 友好页，且响应不泄露令牌', async () => {
+    const target = encodeURIComponent('https://example.com/another');
+    const res = await onRequest(context('GET', '/api/v1/jsadd?token=wrong&name=x&url=' + target));
+    assert.equal(res.status, 401);
+    const body = await res.text();
+    assert.ok(body.includes('添加令牌无效'));
+    assert.ok(!body.includes(env.JSADD_TOKEN));
+});
+
+await test('一键添加：已存在网址与非法地址不会写入 KV', async () => {
+    const before = kv.writes;
+    const link = kv.raw(STATE_KEY).links.find(l => /^https?:\/\//.test(l.link_url));
+    assert.ok(link, '种子数据应有可测试的网址');
+    const dup = await onRequest(context('GET', '/api/v1/jsadd?token=' + env.JSADD_TOKEN + '&name=duplicate&url=' + encodeURIComponent(link.link_url)));
+    assert.equal(dup.status, 400);
+    assert.ok((await dup.text()).includes('该网址已存在'));
+    const bad = await onRequest(context('GET', '/api/v1/jsadd?token=' + env.JSADD_TOKEN + '&name=bad&url=' + encodeURIComponent('http://127.0.0.1/')));
+    assert.equal(bad.status, 400);
+    assert.ok((await bad.text()).includes('参数不合法'));
+    assert.equal(kv.writes, before, '失败路径不得产生 KV 写入');
 });
 
 console.log('\n通过 ' + passed + ' 项，失败 ' + failed + ' 项；KV 写入 ' + kv.writes + ' 次');

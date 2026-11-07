@@ -228,7 +228,7 @@ $(document).ready(function() {
     generateBookmarklet();
     
     // 为复制按钮添加点击事件
-    $('#copy-bookmarklet').on('click', copyBookmarklet);
+    $('#copy-bookmarklet').off('click.bk').on('click.bk', copyBookmarklet);
 });
 
 
@@ -629,7 +629,7 @@ function initEventListeners() {
 
     // 一键添加书签功能
     generateBookmarklet();
-    $('#copy-bookmarklet').on('click', copyBookmarklet);
+    $('#copy-bookmarklet').off('click.bk').on('click.bk', copyBookmarklet);
     
     // 分类表单保存按钮点击
     $("#save-category-btn").on("click", function(e) {
@@ -2571,52 +2571,85 @@ function deleteSearchEngine(id) {
 // 一键添加书签功能
 // ------------------------------
 
-function generateBookmarklet() {
-    // 获取当前网站URL（使用window.location.origin）
-    const baseUrl = window.location.origin;
-    // token 由 Worker 在管理页响应中动态注入（仅登录后可见），源码与静态产物不保存任何凭据
-    const token = window.__JSADD_TOKEN__ || '';
-    if (!token) {
-        $('#bookmarklet-link').val('未配置 JSADD_TOKEN：请在 Cloudflare Pages 环境变量中设置后重新部署');
-        return;
-    }
-    
-    // 生成简洁可靠的bookmarklet代码（使用iframe模态框）
-    const bookmarklet = `javascript:(function(){var overlay=document.createElement("div");overlay.style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:9999;";var modal=document.createElement("div");modal.style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:550px;height:450px;background:white;border-radius:12px;box-shadow:0 15px 50px rgba(0,0,0,0.3);z-index:10000;overflow:hidden;";var closeBtn=document.createElement("button");closeBtn.style="position:absolute;top:10px;right:10px;width:35px;height:35px;background:#ff4444;color:white;border:none;border-radius:50%;cursor:pointer;font-size:20px;z-index:10002;";closeBtn.innerHTML="×";closeBtn.onclick=function(){document.body.removeChild(modal);document.body.removeChild(overlay);window.removeEventListener('message',handleCloseMessage);};var iframe=document.createElement("iframe");iframe.style="width:100%;height:100%;border:none;overflow:hidden;";iframe.src="${baseUrl}/api/v1/jsadd?token=${token}&name="+encodeURIComponent(document.title)+"&url="+encodeURIComponent(location.href);iframe.scrolling="no";modal.appendChild(closeBtn);modal.appendChild(iframe);document.body.appendChild(overlay);document.body.appendChild(modal);overlay.onclick=function(){document.body.removeChild(modal);document.body.removeChild(overlay);window.removeEventListener('message',handleCloseMessage);};function handleCloseMessage(event){if(event.data==='close-modal'){document.body.removeChild(modal);document.body.removeChild(overlay);window.removeEventListener('message',handleCloseMessage);}}window.addEventListener('message',handleCloseMessage);setTimeout(function(){if(document.body.contains(modal)){document.body.removeChild(modal);document.body.removeChild(overlay);window.removeEventListener('message',handleCloseMessage);}},5000);})();void(0)`;
-    
-    // 填充到输入框
-    $('#bookmarklet-link').val(bookmarklet);
+// 生成书签栏代码：结果页以 iframe 呈现；不自动关闭，支持 ESC / 点遮罩 / 结果页按钮关闭
+function buildBookmarklet(baseUrl, token) {
+    const endpoint = baseUrl + '/api/v1/jsadd?token=' + encodeURIComponent(token);
+    const code = [
+        "(function(){",
+        "var ID='__nav_jsadd_box__';var old=document.getElementById(ID);if(old&&old.parentNode)old.parentNode.removeChild(old);",
+        "var box=document.createElement('div');box.id=ID;",
+        "box.style.cssText='position:fixed;inset:0;z-index:2147483647;background:rgba(15,23,42,.55);display:flex;align-items:center;justify-content:center;padding:16px;box-sizing:border-box;font-family:system-ui,sans-serif';",
+        "var card=document.createElement('div');card.style.cssText='position:relative;width:min(560px,100%);height:min(470px,86vh);background:#fff;border-radius:14px;box-shadow:0 20px 60px rgba(0,0,0,.28);overflow:hidden';",
+        "var bar=document.createElement('div');bar.style.cssText='height:46px;box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;padding:0 12px 0 16px;border-bottom:1px solid #eef0f3;font-size:14px;font-weight:600;color:#1f2329';",
+        "var label=document.createElement('span');label.textContent='添加到导航站';bar.appendChild(label);",
+        "var tools=document.createElement('div');tools.style.cssText='display:flex;align-items:center;gap:14px';",
+        "var url=" + JSON.stringify(endpoint) + "+'&name='+encodeURIComponent(document.title||location.hostname)+'&url='+encodeURIComponent(location.href);",
+        "var open=document.createElement('a');open.textContent='新窗口打开';open.href=url;open.target='_blank';open.rel='noopener noreferrer';open.style.cssText='font-size:12px;font-weight:400;color:#2563eb;text-decoration:none';",
+        "var close=document.createElement('button');close.type='button';close.textContent='×';close.setAttribute('aria-label','关闭');close.style.cssText='width:28px;height:28px;border:0;border-radius:8px;background:#f3f4f6;color:#4b5563;font-size:20px;line-height:1;cursor:pointer';",
+        "tools.appendChild(open);tools.appendChild(close);bar.appendChild(tools);card.appendChild(bar);",
+        "var f=document.createElement('iframe');f.src=url;f.title='添加到导航站';f.style.cssText='display:block;width:100%;height:calc(100% - 46px);border:0;background:#f7f8fa';card.appendChild(f);",
+        "box.appendChild(card);document.body.appendChild(box);",
+        "function done(){window.removeEventListener('message',onMsg);document.removeEventListener('keydown',onKey);if(box.parentNode)box.parentNode.removeChild(box);}",
+        "function onMsg(e){if(e&&e.data==='nav-jsadd-close')done();}",
+        "function onKey(e){if(e.key==='Escape')done();}",
+        "window.addEventListener('message',onMsg);document.addEventListener('keydown',onKey);",
+        "close.onclick=done;box.onclick=function(e){if(e.target===box)done();};",
+        "})();void 0"
+    ].join('');
+    return 'javascript:' + code;
 }
 
-// 复制bookmarklet到剪贴板
+function setBookmarkletStatus(text, ok) {
+    const $el = $('#bookmarklet-status');
+    if (!$el.length) return;
+    $el.removeClass('bk-ok bk-err').addClass(ok ? 'bk-ok' : 'bk-err').text(text);
+}
+
+function generateBookmarklet() {
+    const $input = $('#bookmarklet-link');
+    if (!$input.length) return;
+    const token = String(window.__JSADD_TOKEN__ || '').trim();
+    if (!token) {
+        // 绝不把中文提示塞进书签栏输入框，避免用户误当作书签代码复制
+        $input.val('').attr('placeholder', '令牌未就绪');
+        $('#bookmarklet-drag').hide();
+        $('#copy-bookmarklet').prop('disabled', true);
+        setBookmarkletStatus('未获取到添加令牌：请按 Ctrl+F5 强制刷新本页；若仍无效，请检查服务端 SESSION_SECRET 配置。', false);
+        return;
+    }
+    const bookmarklet = buildBookmarklet(window.location.origin, token);
+    $input.val(bookmarklet).removeAttr('placeholder');
+    $('#bookmarklet-drag').attr('href', bookmarklet).show();
+    $('#copy-bookmarklet').prop('disabled', false);
+    setBookmarkletStatus('已就绪：复制左侧代码，或把「拖我到书签栏」直接拖到浏览器书签栏。', true);
+}
+
+// 复制 bookmarklet 到剪贴板
 function copyBookmarklet() {
-    const bookmarkletInput = document.getElementById('bookmarklet-link');
-    
-    // 选择文本
-    bookmarkletInput.select();
-    bookmarkletInput.setSelectionRange(0, 99999); // 移动到文本末尾
-    
-    try {
-        // 复制到剪贴板
-        document.execCommand('copy');
-        
-        // 显示复制成功提示
-        const copyButton = document.getElementById('copy-bookmarklet');
-        const originalText = copyButton.textContent;
-        copyButton.textContent = '已复制!';
-        copyButton.classList.add('bg-green-600');
-        copyButton.classList.remove('bg-blue-600');
-        
-        // 2秒后恢复原状
-        setTimeout(() => {
-            copyButton.textContent = originalText;
-            copyButton.classList.remove('bg-green-600');
-            copyButton.classList.add('bg-blue-600');
-        }, 2000);
-        
-    } catch (err) {
-        console.error('复制失败:', err);
-        alert('复制失败，请手动复制');
+    const input = document.getElementById('bookmarklet-link');
+    if (!input || input.value.indexOf('javascript:') !== 0) {
+        alert('书签代码尚未生成，请按 Ctrl+F5 强制刷新后台后重试。');
+        return;
+    }
+    const button = document.getElementById('copy-bookmarklet');
+    const feedback = () => {
+        if (!button) return;
+        const original = button.dataset.label || button.textContent;
+        button.dataset.label = original;
+        button.textContent = '已复制 ✓';
+        setTimeout(() => { button.textContent = original; }, 2000);
+    };
+    const fallback = () => {
+        input.focus();
+        input.select();
+        input.setSelectionRange(0, input.value.length);
+        if (document.execCommand('copy')) feedback();
+        else alert('复制失败，请手动全选左侧代码复制。');
+    };
+    if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(input.value).then(feedback, fallback);
+    } else {
+        fallback();
     }
 }
 

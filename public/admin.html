@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="vendor/font-awesome/css/font-awesome.min.css">
     <!-- 引入jQuery -->
     <script src="vendor/jquery/dist/jquery.min.js"></script>
-    <script src="js/security-utils.js?v=20261107n"></script>
+    <script src="js/security-utils.js?v=20261107o"></script>
     <link rel="stylesheet" href="vendor/jquery-ui/dist/themes/base/jquery-ui.min.css">
     <script src="vendor/jquery-ui/dist/jquery-ui.min.js"></script>
 
@@ -39,8 +39,8 @@
         }
     </style>
     <!-- 视觉主题（纯 CSS 增强，须在 Tailwind CDN 之后加载） -->
-    <link rel="stylesheet" href="res/nav-theme.css?v=20261107n">
-    <link rel="stylesheet" href="res/admin-theme.css?v=20261107n">
+    <link rel="stylesheet" href="res/nav-theme.css?v=20261107o">
+    <link rel="stylesheet" href="res/admin-theme.css?v=20261107o">
 </head>
 <body class="bg-gray-50 min-h-screen page-admin">
     <!-- 顶部导航栏（控制台风格） -->
@@ -633,20 +633,31 @@
                         </button>
                     </div>
                     
+                    <!-- 一键添加书签 -->
+                    <div class="bk-card">
+                        <div class="bk-head">
+                            <div class="bk-icon"><i class="fa fa-bookmark"></i></div>
+                            <div>
+                                <h3>一键添加书签</h3>
+                                <p>把书签代码放进浏览器书签栏，浏览任意网页时点一下，即可把当前网址收录到导航站。</p>
+                            </div>
+                        </div>
+                        <div class="bk-row">
+                            <input type="text" id="bookmarklet-link" class="bk-input" readonly placeholder="正在生成书签代码…">
+                            <button id="copy-bookmarklet" class="bk-btn" type="button"><i class="fa fa-copy"></i> 复制代码</button>
+                            <a id="bookmarklet-drag" class="bk-btn bk-btn-ghost" href="#" onclick="return false;" title="按住拖到浏览器书签栏"><i class="fa fa-arrows"></i> 拖我到书签栏</a>
+                        </div>
+                        <p id="bookmarklet-status" class="bk-status" role="status" aria-live="polite"></p>
+                        <ul class="bk-tips">
+                            <li>推荐直接把「拖我到书签栏」拖到书签栏；也可以复制代码后手动新建书签，网址栏粘贴这串代码。</li>
+                            <li>新收录的网址默认进入第一个分类，可在「书签管理」里修改分类、名称和描述。</li>
+                            <li>少数网站的安全策略会拦截书签脚本，此时点弹窗右上角「新窗口打开」即可。</li>
+                        </ul>
+                    </div>
+
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <!-- 基本信息 -->
-                        <!-- 一键添加书签功能说明 -->
-        <div class="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
-            <h3 class="text-lg font-semibold text-blue-800 dark:text-blue-200 mb-2">一键添加书签功能</h3>
-            <p class="text-blue-700 dark:text-blue-300 mb-3">将下面的链接添加到浏览器书签栏，即可在任意网站一键添加书签：</p>
-            <div class="flex items-center gap-2">
-                <input type="text" id="bookmarklet-link" class="flex-1 px-4 py-2 border border-blue-300 dark:border-blue-700 rounded-lg bg-white dark:bg-gray-800 text-blue-900 dark:text-blue-100" readonly>
-                <button id="copy-bookmarklet" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors duration-200">复制</button>
-            </div>
-            <p class="text-xs text-blue-600 dark:text-blue-400 mt-2">使用说明：打开任意网站，点击书签栏中的"一键添加书签"按钮即可将当前网站添加到导航站</p>
-        </div>
-
-        <div class="space-y-4">
+                        <div class="space-y-4">
             <div>
                 <label for="website-title" class="block text-sm font-medium text-gray-700 mb-1">网站标题</label>
                 <input type="text" id="website-title" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary" placeholder="请输入网站标题">
@@ -726,13 +737,13 @@
     <!-- 引入Quill富文本编辑器 (使用jsdelivr CDN确保可靠加载) -->
     <script src="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.min.js"></script>
     <!-- 引入主题管理脚本 -->
-    <script src="js/theme/themeManager.js?v=20261107n"></script>
+    <script src="js/theme/themeManager.js?v=20261107o"></script>
     <!-- 引入仪表盘JS -->
-    <script src="js/dashboard.js?v=20261107n"></script>
+    <script src="js/dashboard.js?v=20261107o"></script>
     <!-- 引入管理后台JS -->
-    <script src="js/admin.js?v=20261107n"></script>
+    <script src="js/admin.js?v=20261107o"></script>
     <!-- 控制台布局：标签页 / 页面标题联动（纯展示层，须在 admin.js 之后） -->
-    <script src="js/admin-layout.js?v=20261107n"></script>
+    <script src="js/admin-layout.js?v=20261107o"></script>
     
     <!-- 搜索引擎表单 -->
     <div id="search-engine-form" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">

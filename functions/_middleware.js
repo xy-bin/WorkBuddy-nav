@@ -1,6 +1,6 @@
 // 全站中间件：管理页别名鉴权 + 静态路径默认拒绝 + 页面 PV 攒批
 // Pages 会把 admin.html 同时映射为 /admin，仅靠 functions/admin.html.js 会被绕过
-import { readSession } from '../lib/auth.js';
+import { readSession, getJsaddToken } from '../lib/auth.js';
 import { withSecurity, isAllowedStatic } from '../lib/security.js';
 import { recordVisit } from '../lib/store.js';
 
@@ -49,19 +49,23 @@ export async function onRequest(context) {
         context.waitUntil(recordVisit(context.env));
     }
 
-    // 4) 管理页登录后动态注入 jsadd token：凭据只来自环境变量，绝不进入仓库或静态产物
+    // 4) 管理页登录后动态注入 jsadd token：凭据只来自环境变量/密钥派生，绝不进入仓库或静态产物
+    //    显式 JSADD_TOKEN 优先，未配置则由 SESSION_SECRET 派生，避免"没配变量功能就失效"
     //    clone().text() 避免在不注入时消费掉原响应体
-    if (method === 'GET' && isAdminPath && adminSession && context.env.JSADD_TOKEN &&
+    if (method === 'GET' && isAdminPath && adminSession &&
         /text\/html/i.test(response.headers.get('content-type') || '')) {
-        const html = await response.clone().text();
-        if (!html.includes('__JSADD_TOKEN__')) {
-            const literal = JSON.stringify(context.env.JSADD_TOKEN).replace(/</g, '\\u003c');
-            const tag = '<script>window.__JSADD_TOKEN__=' + literal + ';</script>';
-            const out = html.includes('</head>') ? html.replace('</head>', tag + '</head>') : tag + html;
-            const headers = new Headers(response.headers);
-            headers.delete('content-length');
-            headers.set('Cache-Control', 'no-store');
-            return withSecurity(new Response(out, { status: response.status, headers }), url.href);
+        const jsaddToken = await getJsaddToken(context.env);
+        if (jsaddToken) {
+            const html = await response.clone().text();
+            if (!html.includes('__JSADD_TOKEN__')) {
+                const literal = JSON.stringify(jsaddToken).replace(/</g, '\\u003c');
+                const tag = '<script>window.__JSADD_TOKEN__=' + literal + ';</script>';
+                const out = html.includes('</head>') ? html.replace('</head>', tag + '</head>') : tag + html;
+                const headers = new Headers(response.headers);
+                headers.delete('content-length');
+                headers.set('Cache-Control', 'no-store');
+                return withSecurity(new Response(out, { status: response.status, headers }), url.href);
+            }
         }
     }
     return response;
