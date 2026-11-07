@@ -459,6 +459,83 @@ body.page-admin :is(#category-form, #link-form, #image-source-form,
     min-width: 0;
 }
 
+/* ---------------- 开关：原生 checkbox → 绿色胶囊 toggle ----------------
+   纯 CSS 覆盖，不改任何 DOM / id / 事件，JS 里的 :checked 判断照常生效。
+   开启 = 主色绿底 + 白色圆点靠右；关闭 = 浅灰底 + 圆点靠左。 */
+body.page-admin input[type="checkbox"] {
+    -webkit-appearance: none;
+    appearance: none;
+    position: relative;
+    display: inline-block;
+    flex: 0 0 auto;
+    width: 32px !important;
+    height: 18px !important;
+    margin: 0 8px 0 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 999px;
+    background: #d7e2de !important;
+    box-shadow: inset 0 0 0 1px rgba(18, 56, 45, .08);
+    cursor: pointer;
+    vertical-align: middle;
+    transition: background .2s ease, box-shadow .2s ease;
+}
+
+body.page-admin input[type="checkbox"]::before {
+    content: "";
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 1px 3px rgba(16, 40, 32, .28);
+    transition: transform .2s ease;
+}
+
+body.page-admin input[type="checkbox"]:checked {
+    background: var(--nv-primary) !important;
+    box-shadow: inset 0 0 0 1px rgba(14, 155, 116, .25);
+}
+
+body.page-admin input[type="checkbox"]:checked::before {
+    transform: translateX(14px);
+}
+
+body.page-admin input[type="checkbox"]:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(14, 155, 116, .18);
+}
+
+body.page-admin input[type="checkbox"]:disabled {
+    opacity: .5;
+    cursor: not-allowed;
+}
+
+body.dark.page-admin input[type="checkbox"]:not(:checked) {
+    background: rgba(255, 255, 255, .18) !important;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .12);
+}
+
+/* 单选按钮保持圆形，仅统一主色，与开关同一套绿色 */
+body.page-admin input[type="radio"] {
+    width: 15px;
+    height: 15px;
+    accent-color: var(--nv-primary);
+    cursor: pointer;
+}
+
+/* 开关与文字标签同行居中，避免 18px 高度带来基线错位 */
+body.page-admin label:has(> input[type="checkbox"]),
+body.page-admin div:has(> input[type="checkbox"] + label) {
+    align-items: center;
+}
+body.page-admin input[type="checkbox"] + label {
+    cursor: pointer;
+    line-height: 18px;
+}
+
 /* ---------------- 按钮 ---------------- */
 body.page-admin button {
     border-radius: 8px !important;
