@@ -917,11 +917,17 @@ body.page-home.has-bg-image > footer {
     -webkit-backdrop-filter: blur(9px) saturate(135%);
     backdrop-filter: blur(9px) saturate(135%);
 }
+body.page-home.has-bg-image #category-container > div[id^="category-"] {
+    background: rgba(255,255,255,.42) !important;
+}
+body.dark.page-home.has-bg-image #category-container > div[id^="category-"] {
+    background: rgba(18,24,42,.42) !important;
+}
 body.page-home.has-bg-image #category-container ul[id^="link-list-"] > li {
-    background: rgba(255,255,255,.56) !important;
+    background: rgba(255,255,255,.34) !important;
 }
 body.dark.page-home.has-bg-image #category-container ul[id^="link-list-"] > li {
-    background: rgba(18,24,42,.54) !important;
+    background: rgba(18,24,42,.38) !important;
 }
 body.page-home.has-bg-image #category-container > div[id^="category-"] > div:first-child {
     background: rgba(255,255,255,.18) !important;
