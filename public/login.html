@@ -17,14 +17,14 @@
             theme: {
                 extend: {
                     colors: {
-                        primary: '#4F46E5',
+                        primary: '#0e9b74',
                     },
                 }
             }
         };
     </script>
     <!-- 视觉主题（纯 CSS 增强，须在 Tailwind CDN 之后加载） -->
-    <link rel="stylesheet" href="res/nav-theme.css?v=20261107r">
+    <link rel="stylesheet" href="res/nav-theme.css?v=20261108a">
 </head>
 <body class="bg-gray-50 min-h-screen flex items-center justify-center page-login">
     <div class="bg-white rounded-xl shadow-md p-8 max-w-md w-full login-card">
@@ -101,6 +101,18 @@
             $('#error-message').text(message);
             $('#login-error').removeClass('hidden');
         }
+    </script>
+    <!-- 网站色系：登录页跟随首页强调色 -->
+    <script src="js/theme/colorSchemes.js?v=20261108a"></script>
+    <script>
+      (function () {
+        if (!window.applyColorScheme) return;
+        fetch('/api/website-settings').then(function (r) { return r.json(); }).then(function (d) {
+          if (d && d.success && d.data && d.data.color_scheme) {
+            window.applyColorScheme(d.data.color_scheme);
+          }
+        }).catch(function () {});
+      })();
     </script>
 </body>
 </html>

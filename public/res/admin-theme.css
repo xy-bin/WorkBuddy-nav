@@ -1145,6 +1145,29 @@ body.page-admin .bg-src-tip.is-err { color: #ea580c; }
 body.page-admin input[type="range"].bg-range { accent-color: var(--nv-primary); height: 6px; }
 body.page-admin #theme-settings details summary { outline: none; }
 
+/* ---------------- 网站色系选择器 ---------------- */
+.color-scheme-swatch {
+    position: relative; width: 88px; height: 48px; border-radius: 12px; cursor: pointer;
+    border: 2px solid transparent; box-shadow: 0 4px 12px -6px rgba(16, 24, 40, .35);
+    display: inline-flex; align-items: flex-end; justify-content: center; padding-bottom: 5px;
+    transition: transform .15s ease, box-shadow .15s ease; overflow: hidden;
+}
+.color-scheme-swatch:hover { transform: translateY(-2px); }
+.color-scheme-swatch span {
+    font-size: 11px; color: #fff; background: rgba(0, 0, 0, .28);
+    padding: 1px 9px; border-radius: 999px; line-height: 1.6;
+}
+.color-scheme-swatch.is-active {
+    border-color: #101828;
+    box-shadow: 0 0 0 3px rgba(16, 24, 40, .18), 0 6px 16px -8px rgba(16, 24, 40, .5);
+}
+.dark .color-scheme-swatch.is-active {
+    border-color: #fff;
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, .25), 0 6px 16px -8px rgba(0, 0, 0, .6);
+}
+.cs-tip-ok { color: #16a34a; }
+.cs-tip-err { color: #dc2626; }
+
 @media (max-width: 480px) {
     body.page-admin .bg-src-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); max-height: 250px; }
 }

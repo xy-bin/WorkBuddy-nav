@@ -2037,8 +2037,80 @@ function initThemeSettings() {
 
     window.syncBgContainers();
     window.loadBgImageSources();
+    initColorScheme();
 }
 
+
+// ------------------------
+// 网站色系（站点级，写入 KV，全站访客生效；后台自身也跟随预览）
+// ------------------------
+function initColorScheme() {
+    const picker = $('#color-scheme-picker');
+    if (!picker.length) return;
+    const schemes = window.COLOR_SCHEMES || {};
+    picker.empty();
+    Object.keys(schemes).forEach(function (key) {
+        const s = schemes[key];
+        const $sw = $('<button type="button" class="color-scheme-swatch" data-key="' + esc(key) +
+            '" title="' + esc(s.name) + '" aria-label="' + esc(s.name) + '"></button>');
+        $sw.css({ background: s.swatch });
+        $sw.append('<span>' + esc(s.name) + '</span>');
+        picker.append($sw);
+    });
+
+    // 读取当前已保存的色系并高亮 + 即时套用到后台预览
+    function applyAndMark(key) {
+        setActiveColorScheme(key);
+        if (window.applyColorScheme) window.applyColorScheme(key);
+    }
+    $.ajax({
+        url: '/api/website-settings', method: 'GET',
+        success: function (res) {
+            const key = (res.success && res.data && res.data.color_scheme) ||
+                (window.COLOR_SCHEME_DEFAULT || 'green');
+            applyAndMark(key);
+        },
+        error: function () { applyAndMark(window.COLOR_SCHEME_DEFAULT || 'green'); }
+    });
+
+    // 点击色块：切换高亮 + 保存到 KV
+    picker.off('click.csch').on('click.csch', '.color-scheme-swatch', function () {
+        const key = $(this).attr('data-key');
+        applyAndMark(key);
+        saveColorScheme(key);
+    });
+}
+
+function setActiveColorScheme(key) {
+    $('#color-scheme-picker .color-scheme-swatch')
+        .removeClass('is-active')
+        .filter('[data-key="' + key + '"]').addClass('is-active');
+}
+
+function saveColorScheme(key) {
+    const tip = $('#color-scheme-tip');
+    $.ajax({
+        url: '/api/website-settings', method: 'POST',
+        data: JSON.stringify({ color_scheme: key }),
+        contentType: 'application/json',
+        xhrFields: { withCredentials: true },
+        success: function (res) {
+            if (res.success) {
+                const name = (window.COLOR_SCHEMES && window.COLOR_SCHEMES[key]) ?
+                    window.COLOR_SCHEMES[key].name : key;
+                tip.removeClass('cs-tip-err').addClass('cs-tip-ok')
+                    .text('已保存色系：' + name + '，刷新首页即可看到效果。');
+            } else {
+                tip.removeClass('cs-tip-ok').addClass('cs-tip-err')
+                    .text(res.message || '保存失败');
+            }
+        },
+        error: function () {
+            tip.removeClass('cs-tip-ok').addClass('cs-tip-err')
+                .text('保存色系失败，请稍后重试');
+        }
+    });
+}
 
 // ------------------------
 // 图片源管理功能

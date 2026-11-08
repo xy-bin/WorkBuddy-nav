@@ -4,7 +4,7 @@ tailwind.config = {
     theme: {
         extend: {
             colors: {
-                primary: '#4F46E5', // 主色调（紫色，可修改）
+                primary: '#0e9b74', // 主色调（默认翠绿，实际跟随网站色系动态覆盖）
                 secondary: '#F3F4F6', // 辅助色调（浅灰）
             },
             fontFamily: {

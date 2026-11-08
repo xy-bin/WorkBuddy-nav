@@ -56,6 +56,11 @@ $(document).ready(function() {
                     if (settings.site_footer_custom) {
                         $('#site-footer-custom').html(sanitizeRichHtml(settings.site_footer_custom));
                     }
+
+                    // 应用网站色系（站点级配置，首页与登录页全站生效）
+                    if (settings.color_scheme && window.applyColorScheme) {
+                        window.applyColorScheme(settings.color_scheme);
+                    }
                 }
             },
             error: function(xhr, status, error) {
