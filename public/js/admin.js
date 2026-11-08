@@ -2591,6 +2591,7 @@ function loadWebsiteSettings() {
                 $("#website-icp").val(settings.site_icp || "");
                 $("#website-footer").val(settings.site_footer || "");
                 $("#website-footer-custom").val(settings.site_footer_custom || "");
+                $("#tracking-code").val(settings.tracking_code || "");
             } else {
                 console.error("加载网站设置失败:", response.message);
             }
@@ -2611,7 +2612,8 @@ function saveWebsiteSettings() {
         site_copyright: $("#website-copyright").val(),
         site_icp: $("#website-icp").val(),
         site_footer: $("#website-footer").val(),
-        site_footer_custom: $("#website-footer-custom").val()
+        site_footer_custom: $("#website-footer-custom").val(),
+        tracking_code: $("#tracking-code").val()
     };
     
     $.ajax({

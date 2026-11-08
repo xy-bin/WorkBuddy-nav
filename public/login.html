@@ -104,12 +104,17 @@
     </script>
     <!-- 网站色系：登录页跟随首页强调色 -->
     <script src="js/theme/colorSchemes.js?v=20261108a"></script>
+    <script src="js/injectTracking.js?v=20261108b"></script>
     <script>
       (function () {
-        if (!window.applyColorScheme) return;
+        if (!window.applyColorScheme && !window.injectTrackingCode) return;
         fetch('/api/website-settings').then(function (r) { return r.json(); }).then(function (d) {
-          if (d && d.success && d.data && d.data.color_scheme) {
+          if (!d || !d.success || !d.data) return;
+          if (d.data.color_scheme && window.applyColorScheme) {
             window.applyColorScheme(d.data.color_scheme);
+          }
+          if (d.data.tracking_code && window.injectTrackingCode) {
+            window.injectTrackingCode(d.data.tracking_code);
           }
         }).catch(function () {});
       })();

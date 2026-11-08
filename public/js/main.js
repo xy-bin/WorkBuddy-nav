@@ -61,6 +61,11 @@ $(document).ready(function() {
                     if (settings.color_scheme && window.applyColorScheme) {
                         window.applyColorScheme(settings.color_scheme);
                     }
+
+                    // 注入网站统计代码（百度统计 / GA / 51.la 等），注入到 <head>
+                    if (settings.tracking_code && window.injectTrackingCode) {
+                        window.injectTrackingCode(settings.tracking_code);
+                    }
                 }
             },
             error: function(xhr, status, error) {

@@ -28,12 +28,22 @@ function destFor(rel) {
 }
 
 // Pages 静态资源安全头（API 响应由 Functions 的 withSecurity 添加）
+// 后台「统计代码」注入的第三方统计脚本需被 CSP 放行，否则会被浏览器静默拦截
+const ANALYTICS_SRC = [
+    'https://*.googletagmanager.com', 'https://*.google-analytics.com', 'https://*.analytics.google.com',
+    'https://*.googlesyndication.com', 'https://*.googleadservices.com', 'https://*.doubleclick.net',
+    'https://*.gstatic.com', 'https://hm.baidu.com', 'https://*.51.la', 'https://*.cnzz.com',
+    'https://*.clarity.ms', 'https://*.bing.com', 'https://*.hotjar.com', 'https://*.plausible.io',
+    'https://*.umeng.com', 'https://*.clicky.com', 'https://static.ads-twitter.com',
+    'https://analytics.tiktok.com', 'https://bat.bing.com'
+].join(' ');
+
 const HEADERS = `/*
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: geolocation=(), microphone=(), camera=()
   X-Frame-Options: SAMEORIGIN
-  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; img-src 'self' data: https:; font-src 'self' data: https://cdnjs.cloudflare.com; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com ${ANALYTICS_SRC}; style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; img-src 'self' data: https: ${ANALYTICS_SRC}; font-src 'self' data: https://cdnjs.cloudflare.com; connect-src 'self' ${ANALYTICS_SRC}; object-src 'none'; base-uri 'self'; form-action 'self'
 
 /*.html
   Cache-Control: public, max-age=0, must-revalidate
