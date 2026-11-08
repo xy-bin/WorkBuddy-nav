@@ -1517,281 +1517,45 @@ function initEventListeners() {
                     parsedData.bookmarks = jsonBookmarks;
                 }
                 
-                // 获取现有分类和书签，用于去重
-                let existingCategories = {};
-                let existingBookmarks = new Set();
-                
-                // 先获取所有分类
-                $.ajax({
-                    url: '/api/categories',
-                    method: 'GET',
-                    async: false, // 同步获取分类列表
-                    success: function(response) {
-                        if (response.success && response.data.length > 0) {
-                            response.data.forEach(category => {
-                                existingCategories[category.category_name] = category.category_id;
-                            });
-                        }
-                    },
-                    error: function(xhr) {
-                        console.error('获取分类列表失败:', xhr);
-                    }
-                });
-                
-                // 获取所有书签URL，用于去重
-                $.ajax({
-                    url: '/api/bookmarks',
-                    method: 'GET',
-                    async: false, // 同步获取书签列表
-                    success: function(response) {
-                        if (response.success && response.data.length > 0) {
-                            response.data.forEach(bookmark => {
-                                existingBookmarks.add(bookmark.bookmark_url);
-                            });
-                        }
-                    },
-                    error: function(xhr) {
-                        console.error('获取书签列表失败:', xhr);
-                    }
-                });
-                
-                // 创建新分类
-                let categoryIdMap = { ...existingCategories };
-                let createdCategories = 0;
-                
-                // 先处理分类创建，确保所有解析到的分类都被创建
-                parsedData.categories.forEach((categoryName, index) => {
-                    if (!categoryIdMap[categoryName]) {
-                        // 创建新分类
-                        $.ajax({
-                            url: '/api/categories',
-                            method: 'POST',
-                            data: JSON.stringify({
-                                category_name: categoryName,
-                                category_icon: 'fa fa-folder',
-                                sort: Object.keys(categoryIdMap).length + index + 1
-                            }),
-                            contentType: 'application/json',
-                            async: false, // 同步创建分类
-                            success: function(response) {
-                                if (response.success) {
-                                    categoryIdMap[categoryName] = response.data.category_id;
-                                    createdCategories++;
-                                    console.log('创建分类成功:', categoryName, response.data.category_id);
-                                }
-                            },
-                            error: function(xhr, status, error) {
-                                console.error('创建分类失败:', categoryName, xhr.responseText || error);
-                            }
-                        });
-                    }
-                });
-                
-                // 确保所有分类都被添加到 categoryIdMap 中
-                console.log('现有分类映射:', categoryIdMap);
-                console.log('解析到的分类:', parsedData.categories);
-                
-                // 遍历所有书签，确保它们的分类都在 categoryIdMap 中
-                console.log('\n=== 检查书签分类 ===');
-                parsedData.bookmarks.forEach((bookmark, index) => {
-                    console.log(`书签 ${index + 1} 分类:`, bookmark.category_name);
-                    if (bookmark.category_name && !categoryIdMap[bookmark.category_name]) {
-                        console.log(`书签 ${index + 1} 的分类 ${esc(bookmark.category_name)} 不在 categoryIdMap 中`);
-                        // 如果分类不在 map 中，创建它
-                        $.ajax({
-                            url: '/api/categories',
-                            method: 'POST',
-                            data: JSON.stringify({
-                                category_name: bookmark.category_name,
-                                category_icon: 'fa fa-folder',
-                                sort: Object.keys(categoryIdMap).length + 1
-                            }),
-                            contentType: 'application/json',
-                            async: false, // 同步创建分类
-                            success: function(response) {
-                                if (response.success) {
-                                    categoryIdMap[bookmark.category_name] = response.data.category_id;
-                                    createdCategories++;
-                                    console.log('创建分类成功:', bookmark.category_name, response.data.category_id);
-                                }
-                            },
-                            error: function(xhr, status, error) {
-                                console.error('创建分类失败:', bookmark.category_name, xhr.responseText || error);
-                            }
-                        });
-                    }
-                });
-                
-                // 如果没有未分类，创建一个
-                if (!categoryIdMap['未分类']) {
-                    $.ajax({
-                        url: '/api/categories',
-                        method: 'POST',
-                        data: JSON.stringify({
-                            category_name: '未分类',
-                            category_icon: 'fa fa-folder',
-                            sort: Object.keys(categoryIdMap).length + 1
-                        }),
-                        contentType: 'application/json',
-                        async: false, // 同步创建分类
-                        success: function(response) {
-                            if (response.success) {
-                                categoryIdMap['未分类'] = response.data.category_id;
-                                createdCategories++;
-                                console.log('创建默认分类成功:', response.data.category_id);
-                            }
-                        },
-                        error: function(xhr, status, error) {
-                            console.error('创建默认分类失败:', xhr.responseText || error);
-                        }
-                    });
-                }
-                
-                // 调试：输出最终的分类映射
-                console.log('最终分类映射:', categoryIdMap);
-                
-                // 批量导入书签，跳过重复项
-                let importedCount = 0;
-                let failedCount = 0;
-                let skippedCount = 0;
-                
-                // 过滤掉重复的书签
-                const uniqueBookmarks = parsedData.bookmarks.filter(bookmark => {
-                    if (existingBookmarks.has(bookmark.bookmark_url)) {
-                        skippedCount++;
-                        return false;
-                    }
-                    existingBookmarks.add(bookmark.bookmark_url);
-                    return true;
-                });
-                
-                console.log('去重后书签数量:', uniqueBookmarks.length);
-                
-                // 遍历书签数据，逐个导入
-                uniqueBookmarks.forEach((bookmark, index) => {
-                    // 调试：输出书签信息
-                    console.log('\n=== 处理书签 ===');
-                    console.log('书签名称:', bookmark.bookmark_name);
-                    console.log('书签URL:', bookmark.bookmark_url);
-                    console.log('预期分类:', bookmark.category_name);
-                    console.log('分类映射:', categoryIdMap);
-                    
-                    // 获取分类ID
-                    let categoryId = categoryIdMap['未分类']; // 默认使用未分类
-                    
-                    // 检查书签是否有category_name
-                    if (bookmark.category_name) {
-                        // 直接查找分类映射
-                        if (categoryIdMap[bookmark.category_name]) {
-                            categoryId = categoryIdMap[bookmark.category_name];
-                            console.log('通过category_name找到分类ID:', bookmark.category_name, '->', categoryId);
-                        } else {
-                            // 尝试去除首尾空格后查找
-                            const trimmedCategoryName = bookmark.category_name.trim();
-                            if (categoryIdMap[trimmedCategoryName]) {
-                                categoryId = categoryIdMap[trimmedCategoryName];
-                                console.log('通过去除空格后的category_name找到分类ID:', trimmedCategoryName, '->', categoryId);
-                            } else {
-                                // 尝试创建分类
-                                console.log('分类不存在，创建:', bookmark.category_name);
-                                $.ajax({
-                                    url: '/api/categories',
-                                    method: 'POST',
-                                    data: JSON.stringify({
-                                        category_name: bookmark.category_name,
-                                        category_icon: 'fa fa-folder',
-                                        sort: Object.keys(categoryIdMap).length + 1
-                                    }),
-                                    contentType: 'application/json',
-                                    async: false, // 同步创建分类
-                                    success: function(response) {
-                                        if (response.success) {
-                                            categoryIdMap[bookmark.category_name] = response.data.category_id;
-                                            categoryId = response.data.category_id;
-                                            createdCategories++;
-                                            console.log('创建分类成功:', bookmark.category_name, response.data.category_id);
-                                        }
-                                    },
-                                    error: function(xhr, status, error) {
-                                        console.error('创建分类失败:', bookmark.category_name, xhr.responseText || error);
-                                    }
-                                });
-                            }
-                        }
-                    } else {
-                        console.log('书签没有category_name，使用默认分类');
-                    }
-                    
-                    console.log('最终分类ID:', categoryId);
-                    
-                    // 为书签添加默认分类（如果没有指定）
-                    const bookmarkName = bookmark.bookmark_name || `未命名书签${index + 1}`;
-                    const bookmarkUrl = bookmark.bookmark_url;
-                    
-                    // 自动匹配图标
-                    let bookmarkIcon = bookmark.bookmark_icon;
-                    if (!bookmarkIcon) {
-                        bookmarkIcon = autoMatchIcon(bookmarkUrl, bookmarkName);
-                    }
-                    
-                    const bookmarkData = {
-                        bookmark_name: bookmarkName,
-                        bookmark_url: bookmarkUrl,
-                        bookmark_icon: bookmarkIcon,
-                        category_id: categoryId,
-                        bookmark_description: bookmark.bookmark_description || '',
-                        sort: bookmark.sort || index
+                // 批量导入：一次性发送给后端 /api/import-bulk（单次写入 KV，规避同 key 每秒 1 次写限制）
+                const payload = (parsedData.bookmarks || []).map(function (b) {
+                    return {
+                        bookmark_name: b.bookmark_name || b.link_name || b.name || '',
+                        bookmark_url: b.bookmark_url || b.link_url || b.url || '',
+                        category_name: b.category_name || b.category || '未分类',
+                        bookmark_icon: b.bookmark_icon || b.link_icon || b.icon || '',
+                        bookmark_description: b.bookmark_description || b.link_desc || b.description || ''
                     };
-                    
-                    console.log('最终导入书签数据:', bookmarkData);
-                    
-                    $.ajax({
-                        url: '/api/bookmarks',
-                        method: 'POST',
-                        data: JSON.stringify(bookmarkData),
-                        contentType: 'application/json',
-                        success: function(response) {
-                            console.log('书签导入成功:', response);
-                            importedCount++;
-                            // 所有书签导入完成后显示结果
-                            if (importedCount + failedCount === uniqueBookmarks.length) {
-                                let resultMsg = `书签导入完成：\n`;
-                                resultMsg += `成功导入书签：${importedCount} 个\n`;
-                                resultMsg += `创建分类：${createdCategories} 个\n`;
-                                resultMsg += `跳过重复书签：${skippedCount} 个\n`;
-                                resultMsg += `导入失败：${failedCount} 个`;
-                                
-                                alert(resultMsg);
-                                loadCategories(); // 重新加载分类列表
-                                loadBookmarks(); // 重新加载书签列表
-                                $("#import-bookmarks-file").val(""); // 重置文件选择
-                            }
-                        },
-                        error: function(xhr, status, error) {
-                            console.error('书签导入失败:', bookmarkData.bookmark_name, xhr.responseText || error);
-                            failedCount++;
-                            // 所有书签导入完成后显示结果
-                            if (importedCount + failedCount === uniqueBookmarks.length) {
-                                let resultMsg = `书签导入完成：\n`;
-                                resultMsg += `成功导入书签：${importedCount} 个\n`;
-                                resultMsg += `创建分类：${createdCategories} 个\n`;
-                                resultMsg += `跳过重复书签：${skippedCount} 个\n`;
-                                resultMsg += `导入失败：${failedCount} 个`;
-                                
-                                alert(resultMsg);
-                                loadCategories(); // 重新加载分类列表
-                                loadBookmarks(); // 重新加载书签列表
-                                $("#import-bookmarks-file").val(""); // 重置文件选择
-                            }
-                        }
-                    });
-                });
-                
-                // 如果所有书签都被跳过
-                if (uniqueBookmarks.length === 0 && skippedCount > 0) {
-                    alert(`书签导入完成：所有 ${skippedCount} 个书签都是重复的，已跳过`);
-                    $("#import-bookmarks-file").val(""); // 重置文件选择
+                }).filter(function (b) { return b.bookmark_name && /^https?:\/\//i.test(b.bookmark_url); });
+
+                if (!payload.length) {
+                    alert('没有可导入的有效书签');
+                    $("#import-bookmarks-file").val("");
+                    return;
                 }
+
+                $.ajax({
+                    url: '/api/import-bulk',
+                    method: 'POST',
+                    data: JSON.stringify({ items: payload }),
+                    contentType: 'application/json',
+                    success: function (resp) {
+                        if (resp.success) {
+                            const d = resp.data || {};
+                            alert('书签导入完成：\n成功导入书签：' + (d.imported || 0) + ' 个\n创建分类：' + (d.createdCategories || 0) + ' 个\n跳过重复书签：' + (d.skipped || 0) + ' 个\n导入失败：' + (d.failed || 0) + ' 个');
+                        } else {
+                            alert('导入失败：' + (resp.message || '未知错误'));
+                        }
+                        loadCategories();
+                        loadBookmarks();
+                        $("#import-bookmarks-file").val("");
+                    },
+                    error: function (xhr) {
+                        console.error('批量导入请求失败:', xhr.responseText || xhr.statusText);
+                        alert('导入请求失败：' + (xhr.responseText || xhr.statusText || xhr.status));
+                        $("#import-bookmarks-file").val("");
+                    }
+                });
             } catch (error) {
                 console.error('导入过程发生错误:', error);
                 alert(`导入书签失败：${esc(error.message)}\n\n详细错误信息请查看浏览器控制台`);

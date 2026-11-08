@@ -446,5 +446,27 @@ await test('一键添加：已存在网址与非法地址不会写入 KV', async
     assert.equal(kv.writes, before, '失败路径不得产生 KV 写入');
 });
 
+await test('批量导入：单次请求只写 1 次 KV，按 URL 去重且幂等可重入', async () => {
+    const before = kv.writes;
+    const items = [
+        { bookmark_name: '批量测试A', bookmark_url: 'https://example.com/bulk-a', category_name: '批量测试类' },
+        { bookmark_name: '批量测试B', bookmark_url: 'https://example.com/bulk-b', category_name: '批量测试类' },
+        { bookmark_name: '批量测试C', bookmark_url: 'https://example.com/bulk-a', category_name: '批量测试类' } // 重复 URL
+    ];
+    const r1 = await api('POST', '/api/import-bulk', { cookie, body: { items } });
+    assert.equal(r1.res.status, 200, '应成功');
+    assert.equal(r1.data.success, true);
+    assert.equal(r1.data.data.imported, 2, '去重后应导入 2 条');
+    assert.equal(r1.data.data.createdCategories, 1, '应创建 1 个新分类');
+    assert.equal(r1.data.data.skipped, 1, '重复 URL 应跳过 1 条');
+    assert.equal(kv.writes, before + 1, '批量导入只应写 1 次 KV（规避同 key 1 写/秒限速）');
+    // 幂等：再次导入相同数据应全部跳过，不再新增、不报错
+    const before2 = kv.writes;
+    const r2 = await api('POST', '/api/import-bulk', { cookie, body: { items } });
+    assert.equal(r2.data.data.imported, 0, '重复导入不应新增');
+    assert.equal(r2.data.data.skipped, 3, '第二次应全部跳过');
+    assert.equal(kv.writes, before2 + 1, '第二次也只写 1 次 KV');
+});
+
 console.log('\n通过 ' + passed + ' 项，失败 ' + failed + ' 项；KV 写入 ' + kv.writes + ' 次');
 if (failed) process.exit(1);

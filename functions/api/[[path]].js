@@ -28,7 +28,8 @@ const API_ROUTES = [
     /^\/api\/website-settings$/,
     /^\/api\/v1\/jsadd$/,
     /^\/api\/backup$/,
-    /^\/api\/restore$/
+    /^\/api\/restore$/,
+    /^\/api\/import-bulk$/
 ];
 
 function publicData(snap) {
