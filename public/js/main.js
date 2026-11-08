@@ -11,37 +11,44 @@ $(document).ready(function() {
                     const settings = response.data;
                     
                     // 更新网站标题：旧版默认标题不再覆盖新版首屏品牌名「拾光书签」
-                    // 后台改成任意其它名称后仍会正常联动到标签页与首屏
+                    // 后台改成任意其它名称后仍会正常联动到标签页、首屏与社交分享卡片
                     if (settings.site_title) {
                         const title = String(settings.site_title).trim();
                         const legacyTitles = ['崇尚专注 乐于分享', '聚合导航', '我的聚合导航站', '我的聚合导航站 - 实用网站导航集合'];
                         const isLegacy = legacyTitles.indexOf(title) !== -1;
-                        $('#site-title').text(isLegacy ? '拾光书签' : title);
+                        const displayTitle = isLegacy ? '拾光书签' : title;
+                        $('#site-title').text(displayTitle);
+                        $('meta[property="og:title"]').attr('content', displayTitle);
+                        $('meta[name="twitter:title"]').attr('content', displayTitle);
                         if (!isLegacy) $('#brand-name').text(title);
                     }
-                    
+
                     // 更新网站关键词
                     if (settings.site_keywords) {
                         $('#site-keywords').attr('content', settings.site_keywords);
                     }
-                    
-                    // 更新网站描述（同步到首屏 Hero 标语）
+
+                    // 更新网站描述（同步到首屏 Hero 标语与社交分享卡片）
                     if (settings.site_description) {
                         $('#site-description').attr('content', settings.site_description);
                         $('#brand-slogan').text(settings.site_description);
+                        $('meta[property="og:description"]').attr('content', settings.site_description);
+                        $('meta[name="twitter:description"]').attr('content', settings.site_description);
                     }
-                    
+
                     // 更新网站图标
                     if (settings.site_logo) {
                         $('#site-favicon').attr('href', settings.site_logo);
                     }
-                    
-                    // 更新网站版权信息
+
+                    // 更新网站版权信息（同步到页脚与 meta copyright，不再带旧站名与第三方署名）
                     if (settings.site_copyright) {
                         $('#site-footer').text(settings.site_copyright);
+                        $('meta[name="copyright"]').attr('content', settings.site_copyright);
                     } else {
-                        // 如果没有设置版权信息，使用默认内容
-                        $('#site-footer').text('Copyright © 2024 我的聚合导航站 | Theme By Tailwind CSS');
+                        const defaultCopyright = '© 2026 拾光书签';
+                        $('#site-footer').text(defaultCopyright);
+                        $('meta[name="copyright"]').attr('content', defaultCopyright);
                     }
                     
                     // 更新备案信息（添加可点击链接）
