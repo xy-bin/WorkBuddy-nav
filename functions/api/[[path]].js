@@ -164,7 +164,7 @@ async function handle(context) {
     if (!path.startsWith('/api/')) return fail('接口不存在', 404);
     if (!API_ROUTES.some(re => re.test(path))) return fail('接口不存在', 404);
 
-    // 仪表盘展示近 7 天 PV（优先 Durable Object，未绑定时回落 KV；不回写 site:state）
+    // 仪表盘展示近 7 天 PV（优先 D1，未绑定时回落 KV；不回写 site:state）
     if (path === '/api/dashboard' && method === 'GET') {
         const recent = await readVisits(env);
         for (const [day, count] of Object.entries(recent)) {
