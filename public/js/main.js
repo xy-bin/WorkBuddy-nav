@@ -286,7 +286,7 @@ $(document).ready(function() {
                     
                     let linkItem = `
                         <li class="p-3 rounded-lg bg-gray-50 dark:bg-gray-900 shadow-[inset_0_2px_4px_rgba(0,0,0,0.1),0_3px_6px_rgba(0,0,0,0.1),0_1px_2px_rgba(255,255,255,0.8)] dark:shadow-[inset_0_2px_4px_rgba(255,255,255,0.1),0_3px_6px_rgba(0,0,0,0.3),0_1px_2px_rgba(255,255,255,0.1)] hover:shadow-[inset_0_2px_4px_rgba(0,0,0,0.15),0_5px_10px_rgba(0,0,0,0.2),0_2px_4px_rgba(255,255,255,0.9)] dark:hover:shadow-[inset_0_2px_4px_rgba(255,255,255,0.15),0_5px_10px_rgba(0,0,0,0.4),0_2px_4px_rgba(255,255,255,0.15)] active:shadow-[inset_0_3px_6px_rgba(0,0,0,0.2),0_1px_3px_rgba(255,255,255,0.7)] dark:active:shadow-[inset_0_3px_6px_rgba(0,0,0,0.4),0_1px_3px_rgba(255,255,255,0.1)] transition-all duration-300 max-w-full overflow-hidden">
-                            <a href="${safeUrlAttr(safeLink.link_url)}" target="_blank" class="flex items-center text-left text-gray-700 dark:text-gray-200 hover:text-primary transition-colors duration-200 min-w-0 p-2" title="${escapeHtml(fullDesc)}">
+                            <a data-link-id="${safeLink.link_id}" href="${safeUrlAttr(safeLink.link_url)}" target="_blank" class="flex items-center text-left text-gray-700 dark:text-gray-200 hover:text-primary transition-colors duration-200 min-w-0 p-2" title="${escapeHtml(fullDesc)}">
                                 ${iconElement}
                                 <div class="flex flex-col flex-1">
                                     <div class="font-medium truncate">${escapeHtml(safeLink.link_name)}</div>
@@ -780,7 +780,7 @@ $(document).ready(function() {
                                 
                                 let linkItem = `
                                     <li class="p-3 rounded-lg bg-gray-50 dark:bg-gray-900 shadow-[inset_0_2px_4px_rgba(0,0,0,0.1),0_3px_6px_rgba(0,0,0,0.1),0_1px_2px_rgba(255,255,255,0.8)] dark:shadow-[inset_0_2px_4px_rgba(255,255,255,0.1),0_3px_6px_rgba(0,0,0,0.3),0_1px_2px_rgba(255,255,255,0.1)] hover:shadow-[inset_0_2px_4px_rgba(0,0,0,0.15),0_5px_10px_rgba(0,0,0,0.2),0_2px_4px_rgba(255,255,255,0.9)] dark:hover:shadow-[inset_0_2px_4px_rgba(255,255,255,0.15),0_5px_10px_rgba(0,0,0,0.4),0_2px_4px_rgba(255,255,255,0.15)] active:shadow-[inset_0_3px_6px_rgba(0,0,0,0.2),0_1px_3px_rgba(255,255,255,0.7)] dark:active:shadow-[inset_0_3px_6px_rgba(0,0,0,0.4),0_1px_3px_rgba(255,255,255,0.1)] transition-all duration-300 max-w-full overflow-hidden">
-                                        <a href="${safeUrlAttr(link.link_url)}" target="_blank" class="flex items-center text-left text-gray-700 dark:text-gray-200 hover:text-primary transition-colors duration-200 min-w-0 p-2" title="${escapeHtml(fullDesc)}">
+                                        <a data-link-id="${link.link_id}" href="${safeUrlAttr(link.link_url)}" target="_blank" class="flex items-center text-left text-gray-700 dark:text-gray-200 hover:text-primary transition-colors duration-200 min-w-0 p-2" title="${escapeHtml(fullDesc)}">
                                             ${iconElement}
                                             <div class="flex flex-col flex-1">
                                                 <div class="font-medium truncate">${escapeHtml(link.link_name)}</div>
@@ -902,6 +902,63 @@ $(document).ready(function() {
         window.themeManager = new ThemeManager();
     }
 
+    // ************ 功能7：管理员首页右键删除书签 ************
+    function initHomeAdminDelete() {
+        // 1) 探测管理员登录态（Cookie 为 HttpOnly，前端不可读，须由接口判定）
+        window.__NAV_IS_ADMIN__ = false;
+        $.getJSON('/api/check-login', function (res) {
+            if (res && res.loggedIn) window.__NAV_IS_ADMIN__ = true;
+        }).fail(function () { window.__NAV_IS_ADMIN__ = false; });
+
+        // 2) 右键菜单 DOM（动态创建，避免改动 HTML 结构）
+        const menu = $(
+            '<div id="nav-ctx-menu" class="fixed z-[60] hidden min-w-[150px] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl py-1 text-sm text-gray-700 dark:text-gray-200">' +
+            '<button type="button" id="nav-ctx-delete" class="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-red-600">删除此书签</button>' +
+            '</div>'
+        );
+        $('body').append(menu);
+        let currentLinkId = null;
+        function hideMenu() { menu.addClass('hidden'); currentLinkId = null; }
+
+        // 3) 右键书签 → 仅管理员显示菜单；其余情况保留浏览器默认右键菜单
+        $(document).on('contextmenu', function (e) {
+            const el = $(e.target).closest('a[data-link-id]');
+            if (!el.length || !window.__NAV_IS_ADMIN__) { hideMenu(); return; }
+            e.preventDefault();
+            currentLinkId = el.attr('data-link-id');
+            menu.css({ left: e.clientX, top: e.clientY }).removeClass('hidden');
+        });
+
+        // 4) 点击删除
+        menu.on('click', '#nav-ctx-delete', function (e) {
+            e.stopPropagation();
+            const id = currentLinkId;
+            hideMenu();
+            if (!id) return;
+            if (!confirm('确定要删除此书签吗？此操作不可恢复！')) return;
+            $.ajax({
+                url: '/api/bookmarks/' + encodeURIComponent(id),
+                method: 'DELETE',
+                success: function (resp) {
+                    if (resp && resp.success) {
+                        renderNavData(); // 重新渲染，书签与侧栏计数同步更新
+                    } else {
+                        alert((resp && resp.message) || '删除失败');
+                    }
+                },
+                error: function (xhr) {
+                    let msg = '删除失败';
+                    try { const r = JSON.parse(xhr.responseText); msg = r.message || msg; } catch (_) {}
+                    if (xhr.status === 401) msg = '登录已失效，请重新登录后台';
+                    alert(msg);
+                }
+            });
+        });
+
+        // 5) 其它交互关闭菜单
+        $(document).on('click scroll keydown', hideMenu);
+    }
+
     // ************ 初始化所有功能 ************
     function initAllFunctions() {
         // 0. 应用网站设置
@@ -921,6 +978,8 @@ $(document).ready(function() {
         initBackToTop();
         // 7. 初始化主题切换
         initThemeToggle();
+        // 8. 管理员首页右键删除书签
+        initHomeAdminDelete();
     }
 
     // 执行初始化
