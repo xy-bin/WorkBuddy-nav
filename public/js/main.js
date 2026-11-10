@@ -115,14 +115,10 @@ $(document).ready(function() {
         showAnnouncementToast();
     }
     
-    // 显示公告悬浮框
+    // 显示公告悬浮框（固定在页面右上角）
     function showAnnouncementToast() {
         const toast = $('#announcement-toast');
-        // 首屏：浮层下移到 Hero 之下，避免盖住右上角的刷新 / 随机按钮
-        const hero = document.getElementById('hero');
-        if (hero) {
-            toast.css('top', (Math.ceil(hero.getBoundingClientRect().height) + 14) + 'px');
-        }
+        // 固定在右上角（top-4 right-4），不再下移盖住书签卡片
         toast.removeClass('-translate-y-full opacity-0').addClass('translate-y-0 opacity-100');
         // 浮层会压住第一行书签卡片，展示数秒后自动收起
         window.clearTimeout(window.__navToastTimer);

@@ -116,13 +116,17 @@
         var pick = pool[Math.floor(Math.random() * pool.length)];
         lastUrl = pick.url;
 
+        // 始终在新标签打开，本页保持不变；弹窗被拦截时仅提示，绝不跳转当前页
         if (win && !win.closed) {
             win.location.replace(pick.url);
         } else {
             var opened = window.open(pick.url, '_blank', 'noopener,noreferrer');
-            if (!opened) window.location.href = pick.url;   // 弹窗被拦截则当前页跳转
+            if (!opened) {
+                showTip('浏览器拦截了新窗口，请允许弹窗后重试');
+                return; // 弹窗被拦截：保持本页不变
+            }
         }
-        showTip(pick.name ? '已随机打开：' + pick.name : '已随机打开一个网址');
+        showTip(pick.name ? '已在新标签打开：' + pick.name : '已在新标签打开一个网址');
     }
 
     // 进入页面就预取，保证点击时能同步打开新标签
