@@ -1,5 +1,54 @@
 // 等待DOM加载完成后执行（确保所有容器已存在）
 $(document).ready(function() {
+    // ************ 书签图标：按书签域名自动获取对应网站 logo ************
+    function faviconHost(rawUrl) {
+        try {
+            const u = new URL(String(rawUrl || ''));
+            if (u.protocol !== 'http:' && u.protocol !== 'https:') return { host: '', scheme: 'https' };
+            const host = u.hostname.toLowerCase();
+            if (/^\d{1,3}(\.\d{1,3}){3}$/.test(host) || host === 'localhost') return { host: '', scheme: 'https' };
+            return { host: host, scheme: u.protocol === 'http:' ? 'http' : 'https' };
+        } catch (_) { return { host: '', scheme: 'https' }; }
+    }
+    function hostHue(host) {
+        let h = 0;
+        for (let i = 0; i < host.length; i++) h = (h * 31 + host.charCodeAt(i)) % 360;
+        return h;
+    }
+    function iconLetter(name) {
+        const ch = String(name || '').trim().charAt(0);
+        if (!ch) return '◆';
+        return /[a-z0-9]/i.test(ch) ? ch.toUpperCase() : ch;
+    }
+    // 自定义图片图标优先；其余按域名走同源 favicon 接口
+    function buildIconElement(link) {
+        const icon = String(link.link_icon || '').trim();
+        const name = link.link_name || '';
+        const { host, scheme } = faviconHost(link.link_url);
+        if (/^https?:\/\//i.test(icon)) {
+            return `<img src="${safeUrlAttr(icon)}" alt="${escapeHtml(name)}" class="w-8 h-8 rounded-md object-cover mr-3 flex-shrink-0" loading="lazy" decoding="async">`;
+        }
+        if (!host) return `<i class="fa fa-link text-primary text-xl mr-3"></i>`;
+        const hue = hostHue(host);
+        const src = '/api/favicon?domain=' + encodeURIComponent(host) + '&s=' + scheme;
+        return `<img src="${src}" alt="${escapeHtml(name)}" class="auto-favicon w-8 h-8 rounded-md object-cover mr-3 flex-shrink-0" style="background:hsl(${hue},62%,52%)" loading="lazy" decoding="async" data-stage="0" data-host="${escapeHtml(host)}" data-letter="${escapeHtml(iconLetter(name))}" data-hue="${hue}">`;
+    }
+    // 捕获阶段统一处理加载失败：同源接口 -> 第三方 CDN -> 首字色块，杜绝破图
+    document.addEventListener('error', function (ev) {
+        const img = ev.target;
+        if (!img || img.tagName !== 'IMG' || !img.classList.contains('auto-favicon')) return;
+        if (Number(img.getAttribute('data-stage') || 0) === 0) {
+            img.setAttribute('data-stage', '1');
+            img.src = 'https://icon.horse/icon/' + encodeURIComponent(img.getAttribute('data-host') || '');
+            return;
+        }
+        const span = document.createElement('span');
+        span.className = 'w-8 h-8 rounded-md mr-3 flex-shrink-0 flex items-center justify-center text-white text-sm font-semibold select-none';
+        span.style.background = 'hsl(' + Number(img.getAttribute('data-hue') || 210) + ',62%,52%)';
+        span.textContent = img.getAttribute('data-letter') || '◆';
+        if (img.parentNode) img.parentNode.replaceChild(span, img);
+    }, true);
+
     // ************ 功能-1：应用网站设置 ************
     function applyWebsiteSettings() {
         $.ajax({
@@ -274,15 +323,8 @@ $(document).ready(function() {
                     // 8.2 获取完整描述用于悬浮显示
                     let fullDesc = safeLink.link_desc || "无描述";
                     
-                    // 8.3 构建链接列表项结构
-                    let iconElement = '';
-                    if (safeLink.link_icon && safeLink.link_icon.startsWith('http')) {
-                        // 如果是URL，使用图片标签
-                        iconElement = `<img src="${safeUrlAttr(safeLink.link_icon)}" alt="${escapeHtml(safeLink.link_name)}" class="w-8 h-8 rounded-md object-cover mr-3">`;
-                    } else {
-                        // 否则使用Font Awesome图标
-                        iconElement = `<i class="${escapeHtml(safeLink.link_icon)} text-primary text-xl mr-3"></i>`;
-                    }
+                    // 8.3 构建链接列表项结构（图标按域名自动取站点 logo）
+                    const iconElement = buildIconElement(safeLink);
                     
                     let linkItem = `
                         <li class="p-3 rounded-lg bg-gray-50 dark:bg-gray-900 shadow-[inset_0_2px_4px_rgba(0,0,0,0.1),0_3px_6px_rgba(0,0,0,0.1),0_1px_2px_rgba(255,255,255,0.8)] dark:shadow-[inset_0_2px_4px_rgba(255,255,255,0.1),0_3px_6px_rgba(0,0,0,0.3),0_1px_2px_rgba(255,255,255,0.1)] hover:shadow-[inset_0_2px_4px_rgba(0,0,0,0.15),0_5px_10px_rgba(0,0,0,0.2),0_2px_4px_rgba(255,255,255,0.9)] dark:hover:shadow-[inset_0_2px_4px_rgba(255,255,255,0.15),0_5px_10px_rgba(0,0,0,0.4),0_2px_4px_rgba(255,255,255,0.15)] active:shadow-[inset_0_3px_6px_rgba(0,0,0,0.2),0_1px_3px_rgba(255,255,255,0.7)] dark:active:shadow-[inset_0_3px_6px_rgba(0,0,0,0.4),0_1px_3px_rgba(255,255,255,0.1)] transition-all duration-300 max-w-full overflow-hidden">
@@ -768,15 +810,8 @@ $(document).ready(function() {
                                 // 获取完整描述用于悬浮显示
                                 let fullDesc = link.link_desc || "无描述";
                                 
-                                // 构建图标元素
-                                let iconElement = '';
-                                if (link.link_icon && link.link_icon.startsWith('http')) {
-                                    // 如果是URL，使用图片标签
-                                    iconElement = `<img src="${safeUrlAttr(link.link_icon)}" alt="${escapeHtml(link.link_name)}" class="w-8 h-8 rounded-md object-cover mr-3">`;
-                                } else {
-                                    // 否则使用Font Awesome图标
-                                    iconElement = `<i class="${escapeHtml(link.link_icon || 'fa-link')} text-primary text-xl mr-3"></i>`;
-                                }
+                                // 构建图标元素（与首页一致，自动取站点 logo）
+                                const iconElement = buildIconElement(link);
                                 
                                 let linkItem = `
                                     <li class="p-3 rounded-lg bg-gray-50 dark:bg-gray-900 shadow-[inset_0_2px_4px_rgba(0,0,0,0.1),0_3px_6px_rgba(0,0,0,0.1),0_1px_2px_rgba(255,255,255,0.8)] dark:shadow-[inset_0_2px_4px_rgba(255,255,255,0.1),0_3px_6px_rgba(0,0,0,0.3),0_1px_2px_rgba(255,255,255,0.1)] hover:shadow-[inset_0_2px_4px_rgba(0,0,0,0.15),0_5px_10px_rgba(0,0,0,0.2),0_2px_4px_rgba(255,255,255,0.9)] dark:hover:shadow-[inset_0_2px_4px_rgba(255,255,255,0.15),0_5px_10px_rgba(0,0,0,0.4),0_2px_4px_rgba(255,255,255,0.15)] active:shadow-[inset_0_3px_6px_rgba(0,0,0,0.2),0_1px_3px_rgba(255,255,255,0.7)] dark:active:shadow-[inset_0_3px_6px_rgba(0,0,0,0.4),0_1px_3px_rgba(255,255,255,0.1)] transition-all duration-300 max-w-full overflow-hidden">

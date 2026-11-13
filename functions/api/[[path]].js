@@ -1,6 +1,6 @@
 // Cloudflare Pages Functions：所有 /api/* 统一入口
 // 数据只存一份 KV（site:state）；匿名读走字段白名单快照，管理端读写走完整 state
-import { json, fail, withSecurity, fetchUrlSafe, safeHref } from '../../lib/security.js';
+import { json, fail, withSecurity, fetchUrlSafe, safeHref, isSafeOutboundUrl } from '../../lib/security.js';
 import {
     readSession, signSession, verifyPassword, sessionCookie, clearCookie,
     sameOriginOk, clientIp, RateLimiter
@@ -93,6 +93,96 @@ async function handleWebsiteDescription(request, env, url, ip) {
     }
 }
 
+// ---- 书签站点图标：同源代理 + 边缘缓存，不读写 KV ----
+// 只接受纯公网主机名；重定向终点、图片大小、类型均做校验，避免被当成任意抓取代理
+const FAVICON_HOST = /^(?=.{1,253}$)[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)+$/i;
+const ICON_CT = /^(image\/(png|jpeg|jpg|gif|webp|x-icon|vnd\.microsoft\.icon|avif|bmp)|application\/octet-stream)$/i;
+const ICON_MAX = 256 * 1024;
+
+async function fetchIconBinary(raw, timeoutMs) {
+    if (!isSafeOutboundUrl(raw)) return null;
+    const res = await fetch(raw, {
+        method: 'GET',
+        redirect: 'follow',
+        signal: AbortSignal.timeout(timeoutMs),
+        headers: { 'User-Agent': 'Mozilla/5.0 (compatible; NavFavicon/1.0)', 'Accept': 'image/avif,image/webp,image/png,image/*,*/*;q=0.8' }
+    });
+    if (!res.ok || !isSafeOutboundUrl(res.url)) return null;
+    const ct = (res.headers.get('content-type') || '').split(';')[0].trim().toLowerCase();
+    // 不回传 SVG：避免顶层导航时脚本执行风险
+    if (!ICON_CT.test(ct)) return null;
+    if (Number(res.headers.get('content-length') || 0) > ICON_MAX) return null;
+    const buf = await res.arrayBuffer();
+    if (!buf.byteLength || buf.byteLength > ICON_MAX) return null;
+    return new Response(buf, {
+        status: 200,
+        headers: {
+            'Content-Type': ct === 'application/octet-stream' ? 'image/png' : ct,
+            'Cache-Control': 'public, max-age=604800, stale-while-revalidate=86400',
+            'X-Content-Type-Options': 'nosniff'
+        }
+    });
+}
+
+async function fetchIconPageHtml(raw, timeoutMs) {
+    if (!isSafeOutboundUrl(raw)) return '';
+    const res = await fetch(raw, {
+        method: 'GET', redirect: 'follow', signal: AbortSignal.timeout(timeoutMs),
+        headers: { 'User-Agent': 'Mozilla/5.0 (compatible; NavFavicon/1.0)', 'Accept': 'text/html' }
+    });
+    if (!res.ok || !isSafeOutboundUrl(res.url)) return '';
+    const ct = res.headers.get('content-type') || '';
+    if (ct && !/text\/html|application\/xhtml|text\/plain/i.test(ct)) return '';
+    return (await res.text()).slice(0, ICON_MAX);
+}
+
+async function handleFavicon(context) {
+    const url = new URL(context.request.url);
+    const domain = (url.searchParams.get('domain') || '').trim().toLowerCase();
+    if (!FAVICON_HOST.test(domain) || /^\d{1,3}(\.\d{1,3}){3}$/.test(domain)) {
+        return new Response('Bad domain', { status: 400, headers: { 'Cache-Control': 'no-store' } });
+    }
+    const preferHttp = url.searchParams.get('s') === 'http';
+    const bases = preferHttp ? ['http://' + domain, 'https://' + domain] : ['https://' + domain, 'http://' + domain];
+
+    // 边缘缓存：同一域名只在首次回源抓取（本地测试环境可能无 Cache API）
+    const cache = (typeof caches !== 'undefined' && caches.default) ? caches.default : null;
+    const cacheKey = new Request(url.href, { method: 'GET' });
+    if (cache) {
+        const hit = await cache.match(cacheKey).catch(() => null);
+        if (hit) return hit;
+    }
+
+    let icon = null;
+    for (const base of bases) {
+        try { icon = await fetchIconBinary(base + '/favicon.ico', 2500); } catch (_) { /* 超时/不可达，继续 */ }
+        if (icon) break;
+    }
+    if (!icon) {
+        // 站点把图标写在 <link rel="icon"> 而非 /favicon.ico
+        try {
+            const html = await fetchIconPageHtml(bases[0] + '/', 2500);
+            const tags = html.match(/<link\b[^>]*>/gi) || [];
+            for (const tag of tags.slice(0, 30)) {
+                if (!/\brel\s*=\s*["']?[^"'>]*icon/i.test(tag)) continue;
+                const hm = tag.match(/\bhref\s*=\s*["']([^"']+)["']/i) || tag.match(/\bhref\s*=\s*([^\s>]+)/i);
+                if (!hm) continue;
+                let target;
+                try { target = new URL(hm[1], bases[0]).href; } catch (_) { continue; }
+                try { icon = await fetchIconBinary(target, 2500); } catch (_) { /* 换下一个候选 */ }
+                if (icon) break;
+            }
+        } catch (_) { /* 落到 404，由前端降级 */ }
+    }
+    if (!icon) {
+        return new Response('No favicon', { status: 404, headers: { 'Cache-Control': 'public, max-age=3600' } });
+    }
+    if (cache && typeof context.waitUntil === 'function') {
+        context.waitUntil(cache.put(cacheKey, icon.clone()).catch(() => {}));
+    }
+    return icon;
+}
+
 async function handle(context) {
     const { request, env } = context;
     const url = new URL(request.url);
@@ -135,6 +225,10 @@ async function handle(context) {
     }
     if (path === '/api/test' || path === '/api/simple-test') {
         return json({ success: true, message: 'ok', runtime: 'cloudflare-pages', version: Date.now() });
+    }
+    // 图标代理与 KV/session 无关，放在 KV 检查之前，KV 异常时书签图标仍可用
+    if (path === '/api/favicon' && method === 'GET') {
+        return handleFavicon(context);
     }
 
     // KV 绑定缺失时直接给出可操作的提示，避免 TypeError 与脏缓存造成"时好时坏"的假象
