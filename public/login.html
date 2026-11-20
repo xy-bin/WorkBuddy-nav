@@ -1,6 +1,19 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
+    <!-- 站点统计代码（静态内联，确保百度统计自动检测能抓到 hm.js；后台 tracking_code 保留但不再重复注入） -->
+    <script>
+      window.__NAV_STATIC_TRACKING__ = true;
+      var _hmt = _hmt || [];
+      (function() {
+        var hm = document.createElement("script");
+        hm.src = "https://hm.baidu.com/hm.js?52f5248f5e76123fb5330335d99d8dc0";
+        var s = document.getElementsByTagName("script")[0];
+        s.parentNode.insertBefore(hm, s);
+      })();
+    </script>
+    <script charset="UTF-8" id="LA_COLLECT" src="//sdk.51.la/js-sdk-pro.min.js"></script>
+    <script>LA.init({id:"3EzGOOquXIyJ4CdP",ck:"3EzGOOquXIyJ4CdP"})</script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>管理员登录</title>
@@ -104,7 +117,7 @@
     </script>
     <!-- 网站色系：登录页跟随首页强调色 -->
     <script src="js/theme/colorSchemes.js?v=20261108a"></script>
-    <script src="js/injectTracking.js?v=20261108b"></script>
+    <script src="js/injectTracking.js?v=20261121a"></script>
     <script>
       (function () {
         if (!window.applyColorScheme && !window.injectTrackingCode) return;
